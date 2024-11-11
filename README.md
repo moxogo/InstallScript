@@ -1,0 +1,2 @@
+# InstallScript
+Moxogo Install
