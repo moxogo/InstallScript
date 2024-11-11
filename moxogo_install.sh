@@ -14,7 +14,7 @@
 # ./odoo-install
 ################################################################################
 
-OE_USER="mxg18"
+OE_USER="odoo"
 OE_HOME="/$OE_USER"
 OE_HOME_EXT="/$OE_USER/${OE_USER}-server"
 # The default port where this Odoo instance will run under (provided you use the command -c in the terminal)
@@ -37,7 +37,7 @@ OE_SUPERADMIN="admin"
 GENERATE_RANDOM_PASSWORD="True"
 OE_CONFIG="${OE_USER}-server"
 # Set the website name
-WEBSITE_NAME="${OE_USER}.moxogo.tech"
+WEBSITE_NAME="${OE_USER}.website.tech"
 # Set the default Odoo longpolling port (you still have to use -c /etc/odoo-server.conf for example to use this.)
 LONGPOLLING_PORT="8072"
 # Set to "True" to install certbot and have ssl enabled, "False" to use http
@@ -57,11 +57,11 @@ echo -e "\n---- Update Server ----"
 # libpng12-0 dependency for wkhtmltopdf for older Ubuntu versions
 sudo apt-get update
 sudo apt-get upgrade -y
-sudo apt-get install openssh-server
-sudo apt-get install fail2ban
+sudo apt-get install openssh-server -y
+sudo apt-get install fail2ban -y
 sudo systemctl start fail2ban
 sudo systemctl enable fail2ban
-sudo apt-get install libpq-dev
+sudo apt-get install libpq-dev -y
 
 #--------------------------------------------------
 # Install PostgreSQL Server
@@ -72,7 +72,7 @@ if [ $INSTALL_POSTGRESQL_FOURTEEN = "True" ]; then
     sudo curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc|sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
     sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
     sudo apt-get update
-    sudo apt-get install postgresql-16
+    sudo apt-get install postgresql-16 -y
 else
     echo -e "\n---- Installing the default postgreSQL version based on Linux version ----"
     sudo apt-get install postgresql postgresql-server-dev-all -y
@@ -84,18 +84,41 @@ echo -e "\n---- Creating the ODOO PostgreSQL User  ----"
 #createuser --createdb --username postgres --no-createrole --superuser --pwprompt odoo18
 sudo -u postgres psql -c "CREATE USER $OE_USER WITH CREATEDB SUPERUSER PASSWORD '$OE_USER';"
 
+echo -e "\n---- Create ODOO system user ----"
+sudo adduser --system --quiet --shell=/bin/bash --home=$OE_HOME --gecos 'ODOO' --group $OE_USER
+#The user should also be added to the sudo'ers group.
+sudo adduser $OE_USER sudo
+
 #--------------------------------------------------
 # Install Dependencies
 #--------------------------------------------------
 echo -e "\n--- Installing Python 3 + pip3 --"
-sudo apt-get install -y python3 python3-pip
-sudo apt-get install git nano python3-cffi build-essential wget python3-dev python3-venv python3-wheel libxslt-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools node-less libpng-dev libjpeg-dev gdebi libxml2-dev libxslt1-dev zlib1g-dev libssl-dev libffi-dev libmysqlclient-dev libpq-dev liblcms2-dev libblas-dev libatlas-base-dev
+sudo apt-get install -y python3 python3-pip python3-dev python3-venv 
+sudo apt-get install -y git python3-cffi build-essential wget python3-wheel libxslt-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools node-less libpng-dev libjpeg-dev gdebi libxml2-dev libxslt1-dev zlib1g-dev libssl-dev libffi-dev libmysqlclient-dev libpq-dev liblcms2-dev libblas-dev libatlas-base-dev
 
-pip install pyopenssl geoip2 jinja2 babel psycopg2 polib lxml pypdf2 reportlab passlib pytz werkzeug Pillow reportlab PyPDF2 polib psycopg2-binary decorator python-dateutil lxml lxml[html_clean] beautifulsoup4 zeep psutil rjsmin docutils qrcode num2words vobject django-bootstrap4 less libsass psycopg2-binary pdfminer
+sudo su - $OE_USER -s /bin/bash
 
+#--------------------------------------------------
+# Install ODOO
+#--------------------------------------------------
+echo -e "\n==== Installing ODOO Server ===="
+sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
+exit
+
+#--------------------------------------------------
+# Install ODOO Requirements in venv
+#--------------------------------------------------
+echo -e "\n==== Installing ODOO Requirements ===="
+
+sudo python3 -m venv /$OE_USER/venv
+sudo -s
+cd /$OE_USER/
+source /$OE_USER/venv/bin/activate
 
 echo -e "\n---- Install python packages/requirements ----"
 sudo -H pip3 install -r https://github.com/odoo/odoo/raw/${OE_VERSION}/requirements.txt
+
+pip install pyopenssl geoip2 jinja2 babel psycopg2 polib lxml pypdf2 reportlab passlib pytz werkzeug Pillow reportlab PyPDF2 polib psycopg2-binary decorator python-dateutil lxml lxml[html_clean] beautifulsoup4 zeep psutil rjsmin docutils qrcode num2words vobject django-bootstrap4 less libsass psycopg2-binary pdfminer
 
 echo -e "\n---- Installing nodeJS NPM and rtlcss for LTR support ----"
 sudo apt-get install -y nodejs npm node-less
@@ -104,55 +127,22 @@ sudo npm install -g less less-plugin-clean-css
 #sudo npm install -g rtlcss
 
 #--------------------------------------------------
-# Install Wkhtmltopdf if needed
+# Install Wkhtmltopdf
 #--------------------------------------------------
+echo -e "\n---- Installing Wkhtmltopdf ----"
 sudo wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.bionic_amd64.deb
 sudo wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
 sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
 sudo apt-get install -y xfonts-75dpi
 sudo dpkg -i wkhtmltox_0.12.5-1.bionic_amd64.deb
-
-
-echo -e "\n---- Create ODOO system user ----"
-sudo adduser --system --quiet --shell=/bin/bash --home=$OE_HOME --gecos 'ODOO' --group $OE_USER
-#The user should also be added to the sudo'ers group.
-sudo adduser $OE_USER sudo
+sudo ln -s /usr/local/bin/wkhtmltopdf /usr/bin
+sudo ln -s /usr/local/bin/wkhtmltoimage /usr/bin
+sudo apt-get install -f -y
+sudo deactivate
 
 echo -e "\n---- Create Log directory ----"
 sudo mkdir /var/log/$OE_USER
 sudo chown $OE_USER:$OE_USER /var/log/$OE_USER
-
-#--------------------------------------------------
-# Install ODOO
-#--------------------------------------------------
-echo -e "\n==== Installing ODOO Server ===="
-sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
-
-if [ $IS_ENTERPRISE = "True" ]; then
-    # Odoo Enterprise install!
-    sudo pip3 install psycopg2-binary pdfminer.six
-    echo -e "\n--- Create symlink for node"
-    sudo ln -s /usr/bin/nodejs /usr/bin/node
-    sudo su $OE_USER -c "mkdir $OE_HOME/enterprise"
-    sudo su $OE_USER -c "mkdir $OE_HOME/enterprise/addons"
-
-    GITHUB_RESPONSE=$(sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/enterprise "$OE_HOME/enterprise/addons" 2>&1)
-    while [[ $GITHUB_RESPONSE == *"Authentication"* ]]; do
-        echo "------------------------WARNING------------------------------"
-        echo "Your authentication with Github has failed! Please try again."
-        printf "In order to clone and install the Odoo enterprise version you \need to be an offical Odoo partner and you need access to\nhttp://github.com/odoo/enterprise.\n"
-        echo "TIP: Press ctrl+c to stop this script."
-        echo "-------------------------------------------------------------"
-        echo " "
-        GITHUB_RESPONSE=$(sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/enterprise "$OE_HOME/enterprise/addons" 2>&1)
-    done
-
-    echo -e "\n---- Added Enterprise code under $OE_HOME/enterprise/addons ----"
-    echo -e "\n---- Installing Enterprise specific libraries ----"
-    sudo -H pip3 install num2words ofxparse dbfread ebaysdk firebase_admin pyOpenSSL
-    sudo npm install -g less
-    sudo npm install -g less-plugin-clean-css
-fi
 
 echo -e "\n---- Create custom module directory ----"
 sudo su $OE_USER -c "mkdir $OE_HOME/custom"
@@ -162,7 +152,6 @@ echo -e "\n---- Setting permissions on home folder ----"
 sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
 
 echo -e "* Create server config file"
-
 
 sudo touch /etc/${OE_CONFIG}.conf
 echo -e "* Creating server config file"
@@ -176,6 +165,12 @@ sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> /etc/${OE_CONFIG}
 sudo su root -c "printf 'http_port = ${OE_PORT}\n' >> /etc/${OE_CONFIG}.conf"
 sudo su root -c "printf 'logfile = /var/log/${OE_USER}/${OE_CONFIG}.log\n' >> /etc/${OE_CONFIG}.conf"
 sudo su root -c "printf 'addons_path=${OE_HOME_EXT}/addons,${OE_HOME}/custom/addons,${OE_HOME}/custom/moxogo18\n' >> /etc/${OE_CONFIG}.conf"
+sudo su root -c "printf 'default_productivity_apps = True\n' >> /etc/${OE_CONFIG}.conf"
+sudo su root -c "printf 'db_host = localhost\n' >> /etc/${OE_CONFIG}.conf"
+sudo su root -c "printf 'db_port = 5432\n' >> /etc/${OE_CONFIG}.conf"
+sudo su root -c "printf 'db_user = odoo18\n' >> /etc/${OE_CONFIG}.conf"
+sudo su root -c "printf 'db_password = ${OE_USER}\n' >> /etc/${OE_CONFIG}.conf"
+
 
 sudo chown $OE_USER:$OE_USER /etc/${OE_CONFIG}.conf
 sudo chmod 640 /etc/${OE_CONFIG}.conf
@@ -183,7 +178,7 @@ sudo chmod 640 /etc/${OE_CONFIG}.conf
 echo -e "* Create startup file"
 sudo su root -c "echo '#!/bin/sh' >> $OE_HOME_EXT/start.sh"
 sudo su root -c "echo 'sudo -u $OE_USER $OE_HOME_EXT/odoo-bin --config=/etc/${OE_CONFIG}.conf' >> $OE_HOME_EXT/start.sh"
-sudo chmod 755 $OE_HOME_EXT/start.sh
+00sudo chmod 755 $OE_HOME_EXT/start.sh
 
 #--------------------------------------------------
 # Adding ODOO as a deamon (initscript)
