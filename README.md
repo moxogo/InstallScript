@@ -13,7 +13,7 @@ If you set the parameter ```INSTALL_NGINX``` to ```True``` you should also confi
 
 ##### 1. Download the script:
 ```
-sudo wget https://raw.githubusercontent.com/moxogo/InstallScript/18.0/odoo_install.sh
+sudo wget https://raw.githubusercontent.com/moxogo/InstallScript/a228a696dbdda78cf6e541613380cd6ce4f89ffa/moxogo_install.sh
 ```
 ##### 2. Modify the parameters as you wish.
 There are a few things you can configure, this is the most used list:<br/>
