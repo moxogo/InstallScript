@@ -84,10 +84,6 @@ echo -e "\n---- Creating the ODOO PostgreSQL User  ----"
 #createuser --createdb --username postgres --no-createrole --superuser --pwprompt odoo18
 sudo -u postgres psql -c "CREATE USER $OE_USER WITH CREATEDB SUPERUSER PASSWORD '$OE_USER';"
 
-echo -e "\n---- Create ODOO system user ----"
-sudo adduser --system --quiet --shell=/bin/bash --home=$OE_HOME --gecos 'ODOO' --group $OE_USER
-#The user should also be added to the sudo'ers group.
-sudo adduser $OE_USER sudo
 
 #--------------------------------------------------
 # Install Dependencies
@@ -96,24 +92,24 @@ echo -e "\n--- Installing Python 3 + pip3 --"
 sudo apt-get install -y python3 python3-pip python3-dev python3-venv 
 sudo apt-get install -y git python3-cffi build-essential wget python3-wheel libxslt-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools node-less libpng-dev libjpeg-dev gdebi libxml2-dev libxslt1-dev zlib1g-dev libssl-dev libffi-dev libmysqlclient-dev libpq-dev liblcms2-dev libblas-dev libatlas-base-dev
 
-sudo su - $OE_USER -s /bin/bash
+#sudo su - $OE_USER -s /bin/bash
 
 #--------------------------------------------------
 # Install ODOO
 #--------------------------------------------------
 echo -e "\n==== Installing ODOO Server ===="
 sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
-exit
+
 
 #--------------------------------------------------
 # Install ODOO Requirements in venv
 #--------------------------------------------------
 echo -e "\n==== Installing ODOO Requirements ===="
 
-sudo python3 -m venv /$OE_USER/venv
-sudo -s
-cd /$OE_USER/
-source /$OE_USER/venv/bin/activate
+# sudo python3 -m venv /$OE_USER/venv
+# sudo -s
+# cd /$OE_USER/
+# source /$OE_USER/venv/bin/activate
 
 echo -e "\n---- Install python packages/requirements ----"
 sudo -H pip3 install -r https://github.com/odoo/odoo/raw/${OE_VERSION}/requirements.txt
@@ -139,6 +135,11 @@ sudo ln -s /usr/local/bin/wkhtmltopdf /usr/bin
 sudo ln -s /usr/local/bin/wkhtmltoimage /usr/bin
 sudo apt-get install -f -y
 sudo deactivate
+
+echo -e "\n---- Create ODOO system user ----"
+sudo adduser --system --quiet --shell=/bin/bash --home=$OE_HOME --gecos 'ODOO' --group $OE_USER
+#The user should also be added to the sudo'ers group.
+sudo adduser $OE_USER sudo
 
 echo -e "\n---- Create Log directory ----"
 sudo mkdir /var/log/$OE_USER
