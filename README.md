@@ -16,6 +16,11 @@ If you set the parameter ```INSTALL_NGINX``` to ```True``` you should also confi
 sudo wget https://raw.githubusercontent.com/moxogo/InstallScript/a228a696dbdda78cf6e541613380cd6ce4f89ffa/moxogo_install.sh
 ```
 ##### 2. Modify the parameters as you wish.
+```
+sudo apt install nano
+sudo nano moxogo_install.sh
+```
+
 There are a few things you can configure, this is the most used list:<br/>
 ```OE_USER``` will be the username for the system user.<br/>
 ```GENERATE_RANDOM_PASSWORD``` if this is set to ```True``` the script will generate a random password, if set to ```False```we'll set the password that is configured in ```OE_SUPERADMIN```. By default the value is ```True``` and the script will generate a random and secure password.<br/>
