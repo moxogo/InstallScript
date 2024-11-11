@@ -33,12 +33,12 @@ There are a few things you can configure, this is the most used list:<br/>
 
 #### 3. Make the script executable
 ```
-sudo chmod +x odoo_install.sh
+sudo chmod +x moxogo_install.sh
 ```
 ##### 4. Execute the script:
 ```
 sudo apt-get install software-properties-common
-sudo ./odoo_install.sh
+sudo ./moxogo_install.sh
 ```
 
 ## Minimal server requirements
