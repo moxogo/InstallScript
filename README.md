@@ -47,3 +47,47 @@ sudo ./moxogo_install.sh
 ## Minimal server requirements
 While technically you can run an Odoo instance on 1GB (1024MB) of RAM it is absolutely not advised. A Linux instance typically uses 300MB-500MB and the rest has to be split among Odoo, postgreSQL and others. If you install an Odoo you should make sure to use at least 2GB of RAM. This script might fail with less resources too.
 
+## Security Hardening
+After installing Odoo, you can enhance your server's security by running the security hardening script.
+
+##### 1. Download the security script:
+```bash
+sudo wget https://raw.githubusercontent.com/moxogo/InstallScript/refs/heads/main/secure_odoo.sh
+```
+
+##### 2. Make it executable:
+```bash
+sudo chmod +x secure_odoo.sh
+```
+
+##### 3. Configure security parameters (optional):
+You can modify these security parameters in the script:
+- `SSH_PORT`: SSH port number (default: 2222)
+- `SSH_ALLOW_PASSWORD`: Allow password authentication (default: True)
+- `FAIL2BAN_BANTIME`: Ban duration in seconds (default: 3600)
+- `FAIL2BAN_FINDTIME`: Time window for failures in seconds (default: 300)
+- `FAIL2BAN_MAXRETRY`: Maximum retry attempts (default: 3)
+
+##### 4. Run the security script:
+```bash
+sudo ./secure_odoo.sh
+```
+
+The security script implements the following measures:
+- SSH hardening with custom port
+- UFW firewall configuration
+- Fail2ban installation and configuration
+- System parameter optimization
+- PostgreSQL security hardening
+- File permission security
+- ClamAV antivirus installation
+- Secure backup directory setup
+- Audit system configuration
+
+After running the script, make note of:
+1. The new database password generated
+2. The new SSH port (if you changed it from default 2222)
+3. The UFW firewall rules
+4. Location of the secure backup directory: `/var/backups/odoo`
+
+**Note**: Make sure to save the database password shown at the end of the script execution, as it will be needed for database management.

@@ -7,11 +7,11 @@
 # in one Ubuntu because of the different xmlrpc_ports
 #-------------------------------------------------------------------------------
 # Make a new file:
-# sudo nano odoo-install.sh
+# sudo nano moxogo_install.sh
 # Place this content in it and then make the file executable:
-# sudo chmod +x odoo-install.sh
+# sudo chmod +x moxogo_install.sh
 # Execute the script to install Odoo:
-# ./odoo-install
+# ./moxogo_install.sh
 ################################################################################
 
 OE_USER="odoo"
@@ -35,6 +35,8 @@ INSTALL_NGINX="True"
 OE_SUPERADMIN="admin"
 # Set to "True" to generate a random password, "False" to use the variable in OE_SUPERADMIN
 GENERATE_RANDOM_PASSWORD="True"
+# Set the database password - will be generated randomly if not set
+DB_PASSWORD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
 OE_CONFIG="${OE_USER}-server"
 # Set the website name
 WEBSITE_NAME="${OE_USER}.website.tech"
