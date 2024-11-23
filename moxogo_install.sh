@@ -180,59 +180,13 @@ source $OE_HOME/odoo-venv/bin/activate
 pip3 install --upgrade pip
 pip3 install wheel setuptools
 
-# Create a custom requirements file with compatible versions
-cat > $OE_HOME/custom_requirements.txt << 'EOF'
-Babel==2.13.1
-PyPDF2==3.0.1
-psycopg2-binary
-Werkzeug==3.0.1
-lxml
-python-dateutil
-pytz
-pillow
-polib
-psutil
-jinja2
-docutils
-num2words
-python-ldap
-vobject
-reportlab
-requests
-urllib3
-decorator
-pyparsing
-passlib
-idna
-chardet
-qrcode
-xlwt
-zeep
-python-stdnum
-pyOpenSSL
-phonenumbers
-greenlet>=2.0.2
-cffi>=1.15.1
-zope.event>=4.6
-zope.interface>=5.5.2
-gevent>=23.9.1
-EOF
-
-# Install from custom requirements
-pip3 install -r $OE_HOME/custom_requirements.txt
-
-# Now try to install remaining requirements from Odoo's requirements.txt
+# Install from Odoo requirements
 cd $OE_HOME_EXT
-if [ -f "requirements.txt" ]; then
-    while IFS= read -r package; do
-        if [[ ! -z "$package" && ! "$package" =~ ^[[:space:]]*# ]]; then
-            pip3 install "$package" || echo "Failed to install: $package"
-        fi
-    done < requirements.txt
-fi
+echo -e "\n---- Install Odoo Python requirements ----"
+pip3 install -r requirements.txt
 
 # Verify critical packages
-pip3 list | grep -E "Babel|PyPDF2|gevent|Werkzeug"
+pip3 list
 
 # Create start script with proper environment and debugging
 cat > $OE_HOME_EXT/start.sh << 'EOF'
