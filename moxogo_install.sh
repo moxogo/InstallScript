@@ -51,6 +51,16 @@ ADMIN_EMAIL="wizearch55@gmail.com"
 ## https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.bionic_amd64.deb
 
 #--------------------------------------------------
+# Create the Odoo user
+#--------------------------------------------------
+echo -e "\n---- Create ODOO system user ----"
+sudo adduser --system --quiet --shell=/bin/bash --home=$OE_HOME --gecos 'ODOO' --group $OE_USER
+if [ $? -ne 0 ]; then
+    echo "Could not create system user for Odoo. Exiting."
+    exit 1
+fi
+
+#--------------------------------------------------
 # Update Server
 #--------------------------------------------------
 echo -e "\n---- Update Server ----"
@@ -115,13 +125,21 @@ sudo apt-get install -y libblas-dev libatlas-base-dev
 # Additional Dependencies for Odoo 18
 sudo apt-get install -y libsass-dev node-sass
 sudo apt-get install -y nodejs npm node-less
-sudo npm install -g rtlcss
+
+# Check if node symlink exists and remove if it does
+if [ -L "/usr/bin/node" ]; then
+    sudo rm /usr/bin/node
+fi
 sudo ln -s /usr/bin/nodejs /usr/bin/node
+
+sudo npm install -g rtlcss
 sudo npm install -g less less-plugin-clean-css
 
-
 # Switch to odoo user
-sudo su - $OE_USER -s /bin/bash
+sudo su - $OE_USER -s /bin/bash || {
+    echo "Failed to switch to odoo user. Please check if the user was created correctly."
+    exit 1
+}
 
 #--------------------------------------------------
 # Install ODOO
@@ -132,6 +150,10 @@ if [ ! -d "$OE_HOME_EXT" ]; then
     echo "Failed to clone Odoo repository. Please check your internet connection and try again."
     exit 1
 fi
+
+# Create custom module directory
+sudo mkdir -p ${OE_HOME}/custom/addons
+sudo chown -R $OE_USER:$OE_USER ${OE_HOME}/custom
 
 exit
 
@@ -219,7 +241,8 @@ fi
 sudo su root -c "printf 'admin_passwd = ${OE_SUPERADMIN}\n' >> /etc/${OE_CONFIG}.conf"
 sudo su root -c "printf 'http_port = ${OE_PORT}\n' >> /etc/${OE_CONFIG}.conf"
 sudo su root -c "printf 'logfile = /var/log/${OE_USER}/${OE_CONFIG}.log\n' >> /etc/${OE_CONFIG}.conf"
-sudo su root -c "printf 'addons_path=${OE_HOME_EXT}/addons,${OE_HOME}/custom/addons,${OE_HOME}/custom/moxogo18\n' >> /etc/${OE_CONFIG}.conf"
+sudo su root -c "printf '#addons_path=${OE_HOME_EXT}/addons,${OE_HOME}/custom/addons,${OE_HOME}/custom/moxogo18\n' >> /etc/${OE_CONFIG}.conf"
+sudo su root -c "printf 'addons_path=${OE_HOME_EXT}/addons,${OE_HOME}/custom/addons\n' >> /etc/${OE_CONFIG}.conf"
 sudo su root -c "printf 'default_productivity_apps = True\n' >> /etc/${OE_CONFIG}.conf"
 sudo su root -c "printf 'db_host = localhost\n' >> /etc/${OE_CONFIG}.conf"
 sudo su root -c "printf 'db_port = 5432\n' >> /etc/${OE_CONFIG}.conf"

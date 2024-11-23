@@ -91,3 +91,12 @@ After running the script, make note of:
 4. Location of the secure backup directory: `/var/backups/odoo`
 
 **Note**: Make sure to save the database password shown at the end of the script execution, as it will be needed for database management.
+
+## Remove old installations
+If you have multiple versions of Odoo installed, you can remove the old ones by running the following commands:
+```bash
+sudo apt purge odoo
+sudo apt autoremove
+sudo userdel -r odoo
+sudo rm -rf /odoo
+```
