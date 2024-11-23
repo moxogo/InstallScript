@@ -154,31 +154,39 @@ sudo chown -R $OE_USER:$OE_USER ${OE_HOME}/custom
 #--------------------------------------------------
 echo -e "\n==== Installing ODOO Requirements ===="
 
-# Create virtual environment
-python3.10 -m venv $OE_HOME/odoo-venv
-source $OE_HOME/odoo-venv/bin/activate
-
 # Install build dependencies
 sudo apt-get install -y python3.10-dev build-essential
 sudo apt-get install -y libpq-dev libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev
 sudo apt-get install -y python3-pip python3-wheel python3-setuptools
 sudo apt-get install -y libgeos-dev libevent-dev
+sudo apt-get install -y cython3  # Add Cython explicitly
+
+# Create virtual environment
+python3.10 -m venv $OE_HOME/odoo-venv
+source $OE_HOME/odoo-venv/bin/activate
 
 # Upgrade pip and install wheel
 pip3 install --upgrade pip
 pip3 install wheel setuptools
 
+# Install Cython first
+pip3 install Cython==0.29.32
+
 # Install gevent dependencies first
-pip3 install greenlet
-pip3 install cffi
-pip3 install zope.event
-pip3 install zope.interface
+pip3 install greenlet==2.0.2
+pip3 install cffi==1.15.1
+pip3 install zope.event==4.6
+pip3 install zope.interface==5.5.2
 
-# Install pre-built gevent
-pip3 install --no-build-isolation gevent==22.10.2
+# Try to install gevent from wheel first, then fallback to source if needed
+pip3 install --only-binary :all: gevent==21.12.0 || pip3 install gevent==21.12.0 --no-binary :all:
 
-# Install other critical packages first
-pip3 install babel
+# Verify gevent installation
+python3 -c "import gevent; print('gevent version:', gevent.__version__)"
+
+# Install critical packages first
+pip3 install Babel==2.9.1  # Specific version for compatibility
+pip3 install PyPDF2==3.0.1
 pip3 install psycopg2-binary
 pip3 install werkzeug
 pip3 install lxml
@@ -195,12 +203,41 @@ pip3 install vobject
 pip3 install reportlab
 pip3 install requests
 pip3 install urllib3
+pip3 install decorator
+pip3 install pyparsing
+pip3 install passlib
+pip3 install idna
+pip3 install chardet
+pip3 install qrcode
+pip3 install xlwt
+pip3 install zeep
+pip3 install python-stdnum
+pip3 install pyOpenSSL
+pip3 install phonenumbers
 
 # Now install from requirements, but skip already installed packages
-pip3 install -r $OE_HOME_EXT/requirements.txt --no-deps
+cd $OE_HOME_EXT
+pip3 install -r requirements.txt --no-deps
 
-# Create start script with proper environment
-echo -e "#!/bin/bash\n\ncd $OE_HOME\nsource $OE_HOME/odoo-venv/bin/activate\ncd $OE_HOME_EXT\n./odoo-bin --config=/etc/${OE_CONFIG}.conf" > $OE_HOME_EXT/start.sh
+# Verify critical packages
+pip3 list | grep -E "Babel|PyPDF2"
+
+# Create start script with proper environment and debugging
+cat > $OE_HOME_EXT/start.sh << 'EOF'
+#!/bin/bash
+
+cd $OE_HOME
+source $OE_HOME/odoo-venv/bin/activate
+cd $OE_HOME_EXT
+
+# Print Python path and installed packages for debugging
+python3 -c "import sys; print('Python path:', sys.path)"
+pip3 list
+
+# Start Odoo
+./odoo-bin --config=/etc/${OE_CONFIG}.conf
+EOF
+
 sudo chmod 755 $OE_HOME_EXT/start.sh
 sudo chown -R $OE_USER:$OE_USER $OE_HOME_EXT/start.sh
 
