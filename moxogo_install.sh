@@ -149,48 +149,32 @@ fi
 sudo mkdir -p ${OE_HOME}/custom/addons
 sudo chown -R $OE_USER:$OE_USER ${OE_HOME}/custom
 
-exit
-
 #--------------------------------------------------
 # Install ODOO Requirements in venv
 #--------------------------------------------------
 echo -e "\n==== Installing ODOO Requirements ===="
 
 # Create virtual environment
-if [ ! -d "$OE_HOME/odoo-venv" ]; then
-    python3.10 -m venv $OE_HOME/odoo-venv
-fi
+python3.10 -m venv $OE_HOME/odoo-venv
 source $OE_HOME/odoo-venv/bin/activate
 
-# Upgrade pip and install wheel first
-python3.10 -m pip install --upgrade pip
-python3.10 -m pip install wheel
-
-# Install pip packages with error handling
-pip_packages=(
-    "psycopg2-binary"
-    "num2words"
-    "phonenumbers"
-    "python-dateutil"
-    "pytz"
-    "Werkzeug"
-    "Babel"
-    "passlib"
-    "python-ldap"
-    "qrcode"
-    "vobject"
-    "xlwt"
-    "reportlab"
-    "pillow"
-)
-
-for package in "${pip_packages[@]}"; do
-    echo "Installing $package..."
-    pip install $package || {
-        echo "Failed to install $package. Please check your internet connection and try again."
-        exit 1
-    }
-done
+# Install pip packages
+pip3 install wheel
+pip3 install -U pip
+pip3 install psycopg2-binary
+pip3 install num2words
+pip3 install phonenumbers
+pip3 install python-dateutil
+pip3 install pytz
+pip3 install Werkzeug
+pip3 install Babel
+pip3 install passlib
+pip3 install python-ldap
+pip3 install qrcode
+pip3 install vobject
+pip3 install xlwt
+pip3 install reportlab
+pip3 install pillow
 
 #--------------------------------------------------
 # Install Wkhtmltopdf
