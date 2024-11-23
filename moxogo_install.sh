@@ -14,7 +14,7 @@
 # ./moxogo_install.sh
 ################################################################################
 
-OE_USER="odoo"
+OE_USER="odoo18"
 OE_HOME="/$OE_USER"
 OE_HOME_EXT="/$OE_USER/${OE_USER}-server"
 # The default port where this Odoo instance will run under (provided you use the command -c in the terminal)
@@ -39,7 +39,7 @@ GENERATE_RANDOM_PASSWORD="True"
 DB_PASSWORD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
 OE_CONFIG="${OE_USER}-server"
 # Set the website name
-WEBSITE_NAME="${OE_USER}.website.tech"
+WEBSITE_NAME="${OE_USER}.moxogo.tech"
 # Set the default Odoo longpolling port (you still have to use -c /etc/odoo-server.conf for example to use this.)
 LONGPOLLING_PORT="8072"
 # Set to "True" to install certbot and have ssl enabled, "False" to use http
@@ -126,23 +126,37 @@ sudo apt-get install -y libblas-dev libatlas-base-dev
 sudo apt-get install -y libsass-dev node-sass
 sudo apt-get install -y nodejs npm node-less
 
-# Handle Node.js symlink more gracefully
+# Fix Node.js symlink
 echo -e "\n---- Setting up Node.js ----"
-if [ ! -f "/usr/bin/node" ]; then
-    sudo ln -s /usr/bin/nodejs /usr/bin/node
-elif [ ! -L "/usr/bin/node" ]; then
-    sudo mv /usr/bin/node /usr/bin/node.bak
-    sudo ln -s /usr/bin/nodejs /usr/bin/node
+# Remove any existing node symlinks
+sudo rm -f /usr/bin/node
+sudo rm -f /usr/local/bin/node
+# Create fresh symlink
+sudo ln -sf "$(which nodejs)" /usr/bin/node
+
+# Verify Node.js installation
+if ! node --version > /dev/null 2>&1; then
+    echo "Error: Node.js installation failed. Please check your system."
+    exit 1
 fi
 
-# Install global npm packages silently
+# Install global npm packages
 echo -e "\n---- Installing npm packages ----"
-sudo npm install -g rtlcss --no-fund --silent || {
-    echo "Warning: rtlcss installation had issues but continuing..."
-}
-sudo npm install -g less less-plugin-clean-css --no-fund --silent || {
-    echo "Warning: less installation had issues but continuing..."
-}
+export PATH="$PATH:/usr/bin"
+if ! command -v npm > /dev/null 2>&1; then
+    echo "Error: npm not found. Please check your Node.js installation."
+    exit 1
+fi
+
+# Install rtlcss
+if ! sudo -E npm install -g rtlcss --no-fund --silent; then
+    echo "Warning: rtlcss installation failed. This might affect CSS handling."
+fi
+
+# Install less and plugin
+if ! sudo -E npm install -g less less-plugin-clean-css --no-fund --silent; then
+    echo "Warning: less installation failed. This might affect CSS processing."
+fi
 
 # Switch to odoo user
 sudo su - $OE_USER -s /bin/bash || {

@@ -99,4 +99,7 @@ sudo apt purge odoo
 sudo apt autoremove
 sudo userdel -r odoo
 sudo rm -rf /odoo
+sudo rm -f /usr/bin/node /usr/local/bin/node
+sudo apt-get remove -y nodejs npm
+sudo apt-get autoremove -y
 ```
