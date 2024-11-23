@@ -126,43 +126,14 @@ sudo apt-get install -y libblas-dev libatlas-base-dev
 sudo apt-get install -y libsass-dev node-sass
 sudo apt-get install -y nodejs npm node-less
 
-# Fix Node.js symlink
+# Simple Node.js setup
 echo -e "\n---- Setting up Node.js ----"
-# Remove any existing node symlinks
-sudo rm -f /usr/bin/node
-sudo rm -f /usr/local/bin/node
-# Create fresh symlink
-sudo ln -sf "$(which nodejs)" /usr/bin/node
+sudo ln -s /usr/bin/nodejs /usr/bin/node || true
 
-# Verify Node.js installation
-if ! node --version > /dev/null 2>&1; then
-    echo "Error: Node.js installation failed. Please check your system."
-    exit 1
-fi
-
-# Install global npm packages
+# Install npm packages
 echo -e "\n---- Installing npm packages ----"
-export PATH="$PATH:/usr/bin"
-if ! command -v npm > /dev/null 2>&1; then
-    echo "Error: npm not found. Please check your Node.js installation."
-    exit 1
-fi
-
-# Install rtlcss
-if ! sudo -E npm install -g rtlcss --no-fund --silent; then
-    echo "Warning: rtlcss installation failed. This might affect CSS handling."
-fi
-
-# Install less and plugin
-if ! sudo -E npm install -g less less-plugin-clean-css --no-fund --silent; then
-    echo "Warning: less installation failed. This might affect CSS processing."
-fi
-
-# Switch to odoo user
-sudo su - $OE_USER -s /bin/bash || {
-    echo "Failed to switch to odoo user. Please check if the user was created correctly."
-    exit 1
-}
+sudo npm install -g rtlcss
+sudo npm install -g less less-plugin-clean-css
 
 #--------------------------------------------------
 # Install ODOO
