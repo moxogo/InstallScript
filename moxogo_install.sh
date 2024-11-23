@@ -159,7 +159,7 @@ sudo apt-get install -y python3.10-dev build-essential
 sudo apt-get install -y libpq-dev libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev
 sudo apt-get install -y python3-pip python3-wheel python3-setuptools
 sudo apt-get install -y libgeos-dev libevent-dev
-sudo apt-get install -y cython3  # Add Cython explicitly
+sudo apt-get install -y cython3
 
 # Create virtual environment
 python3.10 -m venv $OE_HOME/odoo-venv
@@ -169,63 +169,65 @@ source $OE_HOME/odoo-venv/bin/activate
 pip3 install --upgrade pip
 pip3 install wheel setuptools
 
-# Install Cython first
-pip3 install Cython==0.29.32
+# Create a custom requirements file with compatible versions
+cat > $OE_HOME/custom_requirements.txt << 'EOF'
+Babel==2.9.1
+PyPDF2==3.0.1
+psycopg2-binary
+Werkzeug<3.0.0
+lxml
+python-dateutil
+pytz
+pillow
+polib
+psutil
+jinja2
+docutils
+num2words
+python-ldap
+vobject
+reportlab
+requests
+urllib3
+decorator
+pyparsing
+passlib
+idna
+chardet
+qrcode
+xlwt
+zeep
+python-stdnum
+pyOpenSSL
+phonenumbers
+greenlet==1.1.2
+cffi==1.15.1
+zope.event==4.5.0
+zope.interface==5.4.0
+gevent==20.9.0
+EOF
 
-# Install gevent dependencies first
-pip3 install greenlet==2.0.2
-pip3 install cffi==1.15.1
-pip3 install zope.event==4.6
-pip3 install zope.interface==5.5.2
+# Install from custom requirements
+pip3 install -r $OE_HOME/custom_requirements.txt
 
-# Try to install gevent from wheel first, then fallback to source if needed
-pip3 install --only-binary :all: gevent==21.12.0 || pip3 install gevent==21.12.0 --no-binary :all:
-
-# Verify gevent installation
-python3 -c "import gevent; print('gevent version:', gevent.__version__)"
-
-# Install critical packages first
-pip3 install Babel==2.9.1  # Specific version for compatibility
-pip3 install PyPDF2==3.0.1
-pip3 install psycopg2-binary
-pip3 install werkzeug
-pip3 install lxml
-pip3 install python-dateutil
-pip3 install pytz
-pip3 install pillow
-pip3 install polib
-pip3 install psutil
-pip3 install jinja2
-pip3 install docutils
-pip3 install num2words
-pip3 install python-ldap
-pip3 install vobject
-pip3 install reportlab
-pip3 install requests
-pip3 install urllib3
-pip3 install decorator
-pip3 install pyparsing
-pip3 install passlib
-pip3 install idna
-pip3 install chardet
-pip3 install qrcode
-pip3 install xlwt
-pip3 install zeep
-pip3 install python-stdnum
-pip3 install pyOpenSSL
-pip3 install phonenumbers
-
-# Now install from requirements, but skip already installed packages
+# Now try to install remaining requirements from Odoo's requirements.txt
 cd $OE_HOME_EXT
-pip3 install -r requirements.txt --no-deps
+if [ -f "requirements.txt" ]; then
+    while IFS= read -r package; do
+        if [[ ! -z "$package" && ! "$package" =~ ^[[:space:]]*# ]]; then
+            pip3 install "$package" || echo "Failed to install: $package"
+        fi
+    done < requirements.txt
+fi
 
 # Verify critical packages
-pip3 list | grep -E "Babel|PyPDF2"
+pip3 list | grep -E "Babel|PyPDF2|gevent|Werkzeug"
 
 # Create start script with proper environment and debugging
 cat > $OE_HOME_EXT/start.sh << 'EOF'
 #!/bin/bash
 
+export PYTHONPATH="${PYTHONPATH}:${OE_HOME_EXT}"
 cd $OE_HOME
 source $OE_HOME/odoo-venv/bin/activate
 cd $OE_HOME_EXT
