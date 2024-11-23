@@ -126,14 +126,23 @@ sudo apt-get install -y libblas-dev libatlas-base-dev
 sudo apt-get install -y libsass-dev node-sass
 sudo apt-get install -y nodejs npm node-less
 
-# Check if node symlink exists and remove if it does
-if [ -L "/usr/bin/node" ]; then
-    sudo rm /usr/bin/node
+# Handle Node.js symlink more gracefully
+echo -e "\n---- Setting up Node.js ----"
+if [ ! -f "/usr/bin/node" ]; then
+    sudo ln -s /usr/bin/nodejs /usr/bin/node
+elif [ ! -L "/usr/bin/node" ]; then
+    sudo mv /usr/bin/node /usr/bin/node.bak
+    sudo ln -s /usr/bin/nodejs /usr/bin/node
 fi
-sudo ln -s /usr/bin/nodejs /usr/bin/node
 
-sudo npm install -g rtlcss
-sudo npm install -g less less-plugin-clean-css
+# Install global npm packages silently
+echo -e "\n---- Installing npm packages ----"
+sudo npm install -g rtlcss --no-fund --silent || {
+    echo "Warning: rtlcss installation had issues but continuing..."
+}
+sudo npm install -g less less-plugin-clean-css --no-fund --silent || {
+    echo "Warning: less installation had issues but continuing..."
+}
 
 # Switch to odoo user
 sudo su - $OE_USER -s /bin/bash || {
@@ -246,7 +255,7 @@ sudo su root -c "printf 'addons_path=${OE_HOME_EXT}/addons,${OE_HOME}/custom/add
 sudo su root -c "printf 'default_productivity_apps = True\n' >> /etc/${OE_CONFIG}.conf"
 sudo su root -c "printf 'db_host = localhost\n' >> /etc/${OE_CONFIG}.conf"
 sudo su root -c "printf 'db_port = 5432\n' >> /etc/${OE_CONFIG}.conf"
-sudo su root -c "printf 'db_user = odoo18\n' >> /etc/${OE_CONFIG}.conf"
+sudo su root -c "printf 'db_user = ${OE_USER}\n' >> /etc/${OE_CONFIG}.conf"
 sudo su root -c "printf 'db_password = ${OE_USER}\n' >> /etc/${OE_CONFIG}.conf"
 
 
