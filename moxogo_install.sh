@@ -98,19 +98,27 @@ sudo -u postgres psql -c "CREATE USER $OE_USER WITH CREATEDB SUPERUSER PASSWORD 
 
 
 #--------------------------------------------------
+# Install Python 3.12
+#--------------------------------------------------
+echo -e "\n==== Installing Python 3.12 ===="
+sudo apt update
+sudo apt install -y software-properties-common
+sudo add-apt-repository -y ppa:deadsnakes/ppa
+sudo apt update
+sudo apt install -y python3.12 python3.12-dev python3.12-venv python3.12-distutils
+
+# Create symbolic link for python3.12
+sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
+sudo update-alternatives --config python3
+
+#--------------------------------------------------
 # Install Dependencies
 #--------------------------------------------------
-echo -e "\n--- Installing Python 3.10 + pip3 --"
-# Check if Python 3.10 is already installed
-if ! command -v python3.10 &> /dev/null; then
-    sudo apt-get install -y software-properties-common
-    sudo add-apt-repository ppa:deadsnakes/ppa -y
-    sudo apt-get update
-    sudo apt-get install -y python3.10 python3.10-dev python3.10-venv
-    if ! command -v python3.10 &> /dev/null; then
-        echo "Failed to install Python 3.10. Please check your internet connection and try again."
-        exit 1
-    fi
+echo -e "\n--- Installing Python 3.12 + pip3 --"
+# Check if Python 3.12 is already installed
+if ! command -v python3.12 &> /dev/null; then
+    echo "Failed to install Python 3.12. Please check your internet connection and try again."
+    exit 1
 fi
 
 # Essential Dependencies
@@ -155,14 +163,17 @@ sudo chown -R $OE_USER:$OE_USER ${OE_HOME}/custom
 echo -e "\n==== Installing ODOO Requirements ===="
 
 # Install build dependencies
-sudo apt-get install -y python3.10-dev build-essential
+sudo apt-get install -y build-essential
 sudo apt-get install -y libpq-dev libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev
 sudo apt-get install -y python3-pip python3-wheel python3-setuptools
 sudo apt-get install -y libgeos-dev libevent-dev
 sudo apt-get install -y cython3
 
+# Install pip for Python 3.12
+curl -sS https://bootstrap.pypa.io/get-pip.py | sudo python3.12
+
 # Create virtual environment
-python3.10 -m venv $OE_HOME/odoo-venv
+python3.12 -m venv $OE_HOME/odoo-venv
 source $OE_HOME/odoo-venv/bin/activate
 
 # Upgrade pip and install wheel
@@ -171,10 +182,10 @@ pip3 install wheel setuptools
 
 # Create a custom requirements file with compatible versions
 cat > $OE_HOME/custom_requirements.txt << 'EOF'
-Babel==2.9.1
+Babel==2.13.1
 PyPDF2==3.0.1
 psycopg2-binary
-Werkzeug<3.0.0
+Werkzeug==3.0.1
 lxml
 python-dateutil
 pytz
@@ -200,11 +211,11 @@ zeep
 python-stdnum
 pyOpenSSL
 phonenumbers
-greenlet==1.1.2
-cffi==1.15.1
-zope.event==4.5.0
-zope.interface==5.4.0
-gevent==20.9.0
+greenlet>=2.0.2
+cffi>=1.15.1
+zope.event>=4.6
+zope.interface>=5.5.2
+gevent>=23.9.1
 EOF
 
 # Install from custom requirements
@@ -234,6 +245,7 @@ cd $OE_HOME_EXT
 
 # Print Python path and installed packages for debugging
 python3 -c "import sys; print('Python path:', sys.path)"
+python3 -c "import sys; print('Python version:', sys.version)"
 pip3 list
 
 # Start Odoo
