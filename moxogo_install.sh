@@ -27,8 +27,8 @@ OE_PORT="9090"
 OE_VERSION="18.0"
 # Set this to True if you want to install the Odoo enterprise version!
 IS_ENTERPRISE="False"
-# Installs postgreSQL V14 instead of defaults (e.g V12 for Ubuntu 20/22) - this improves performance
-INSTALL_POSTGRESQL_FOURTEEN="True"
+# Installs postgreSQL V16 for better performance
+INSTALL_POSTGRESQL_SIXTEEN="True"
 # Set this to True if you want to install Nginx!
 INSTALL_NGINX="True"
 # Set the superadmin password - if GENERATE_RANDOM_PASSWORD is set to "True" we will automatically generate a random password, otherwise we use this one
@@ -67,8 +67,8 @@ sudo apt-get install libpq-dev -y
 # Install PostgreSQL Server
 #--------------------------------------------------
 echo -e "\n---- Install PostgreSQL Server ----"
-if [ $INSTALL_POSTGRESQL_FOURTEEN = "True" ]; then
-    echo -e "\n---- Installing postgreSQL V14 due to the user it's choise ----"
+if [ $INSTALL_POSTGRESQL_SIXTEEN = "True" ]; then
+    echo -e "\n---- Installing postgreSQL V16 due to the user it's choise ----"
     sudo curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc|sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
     sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
     sudo apt-get update
@@ -88,39 +88,91 @@ sudo -u postgres psql -c "CREATE USER $OE_USER WITH CREATEDB SUPERUSER PASSWORD 
 #--------------------------------------------------
 # Install Dependencies
 #--------------------------------------------------
-echo -e "\n--- Installing Python 3 + pip3 --"
-sudo apt-get install -y python3 python3-pip python3-dev python3-venv 
-sudo apt-get install -y git python3-cffi build-essential wget python3-wheel libxslt-dev libzip-dev libldap2-dev libsasl2-dev python3-setuptools node-less libpng-dev libjpeg-dev gdebi libxml2-dev libxslt1-dev zlib1g-dev libssl-dev libffi-dev libmysqlclient-dev libpq-dev liblcms2-dev libblas-dev libatlas-base-dev
+echo -e "\n--- Installing Python 3.10 + pip3 --"
+# Check if Python 3.10 is already installed
+if ! command -v python3.10 &> /dev/null; then
+    sudo apt-get install -y software-properties-common
+    sudo add-apt-repository ppa:deadsnakes/ppa -y
+    sudo apt-get update
+    sudo apt-get install -y python3.10 python3.10-dev python3.10-venv
+    if ! command -v python3.10 &> /dev/null; then
+        echo "Failed to install Python 3.10. Please check your internet connection and try again."
+        exit 1
+    fi
+fi
 
-#sudo su - $OE_USER -s /bin/bash
+# Essential Dependencies
+sudo apt-get install -y git build-essential wget
+# Python Dependencies
+sudo apt-get install -y python3-wheel python3-cffi python3-dev python3-setuptools
+# System Dependencies
+sudo apt-get install -y libxslt-dev libzip-dev libldap2-dev libsasl2-dev node-less
+sudo apt-get install -y libpng-dev libjpeg-dev gdebi libxml2-dev libxslt1-dev zlib1g-dev
+sudo apt-get install -y libssl-dev libffi-dev libmysqlclient-dev libpq-dev liblcms2-dev
+sudo apt-get install -y libblas-dev libatlas-base-dev
+# Additional Dependencies for Odoo 18
+sudo apt-get install -y libsass-dev node-sass
+sudo apt-get install -y nodejs npm node-less
+sudo npm install -g rtlcss
+sudo ln -s /usr/bin/nodejs /usr/bin/node
+sudo npm install -g less less-plugin-clean-css
+
+
+# Switch to odoo user
+sudo su - $OE_USER -s /bin/bash
 
 #--------------------------------------------------
 # Install ODOO
 #--------------------------------------------------
 echo -e "\n==== Installing ODOO Server ===="
 sudo git clone --depth 1 --branch $OE_VERSION https://www.github.com/odoo/odoo $OE_HOME_EXT/
+if [ ! -d "$OE_HOME_EXT" ]; then
+    echo "Failed to clone Odoo repository. Please check your internet connection and try again."
+    exit 1
+fi
 
+exit
 
 #--------------------------------------------------
 # Install ODOO Requirements in venv
 #--------------------------------------------------
 echo -e "\n==== Installing ODOO Requirements ===="
 
-# sudo python3 -m venv /$OE_USER/venv
-# sudo -s
-# cd /$OE_USER/
-# source /$OE_USER/venv/bin/activate
+# Create virtual environment
+if [ ! -d "$OE_HOME/odoo-venv" ]; then
+    python3.10 -m venv $OE_HOME/odoo-venv
+fi
+source $OE_HOME/odoo-venv/bin/activate
 
-echo -e "\n---- Install python packages/requirements ----"
-sudo -H pip3 install -r https://github.com/odoo/odoo/raw/${OE_VERSION}/requirements.txt
+# Upgrade pip and install wheel first
+python3.10 -m pip install --upgrade pip
+python3.10 -m pip install wheel
 
-pip install pyopenssl geoip2 jinja2 babel psycopg2 polib lxml pypdf2 reportlab passlib pytz werkzeug Pillow reportlab PyPDF2 polib psycopg2-binary decorator python-dateutil lxml lxml[html_clean] beautifulsoup4 zeep psutil rjsmin docutils qrcode num2words vobject django-bootstrap4 less libsass psycopg2-binary pdfminer
+# Install pip packages with error handling
+pip_packages=(
+    "psycopg2-binary"
+    "num2words"
+    "phonenumbers"
+    "python-dateutil"
+    "pytz"
+    "Werkzeug"
+    "Babel"
+    "passlib"
+    "python-ldap"
+    "qrcode"
+    "vobject"
+    "xlwt"
+    "reportlab"
+    "pillow"
+)
 
-echo -e "\n---- Installing nodeJS NPM and rtlcss for LTR support ----"
-sudo apt-get install -y nodejs npm node-less
-sudo ln -s /usr/bin/nodejs /usr/bin/node
-sudo npm install -g less less-plugin-clean-css
-#sudo npm install -g rtlcss
+for package in "${pip_packages[@]}"; do
+    echo "Installing $package..."
+    pip install $package || {
+        echo "Failed to install $package. Please check your internet connection and try again."
+        exit 1
+    }
+done
 
 #--------------------------------------------------
 # Install Wkhtmltopdf
@@ -179,7 +231,7 @@ sudo chmod 640 /etc/${OE_CONFIG}.conf
 echo -e "* Create startup file"
 sudo su root -c "echo '#!/bin/sh' >> $OE_HOME_EXT/start.sh"
 sudo su root -c "echo 'sudo -u $OE_USER $OE_HOME_EXT/odoo-bin --config=/etc/${OE_CONFIG}.conf' >> $OE_HOME_EXT/start.sh"
-00sudo chmod 755 $OE_HOME_EXT/start.sh
+sudo chmod 755 $OE_HOME_EXT/start.sh
 
 #--------------------------------------------------
 # Adding ODOO as a deamon (initscript)

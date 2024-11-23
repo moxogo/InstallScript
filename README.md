@@ -15,6 +15,10 @@ If you set the parameter ```INSTALL_NGINX``` to ```True``` you should also confi
 ```
 sudo wget https://raw.githubusercontent.com/moxogo/InstallScript/refs/heads/main/moxogo_install.sh
 ```
+```
+sudo apt install nano
+```
+
 ##### 2. Modify the parameters as you wish.
 There are a few things you can configure, this is the most used list:<br/>
 ```OE_USER``` will be the username for the system user.<br/>
@@ -37,7 +41,6 @@ sudo chmod +x moxogo_install.sh
 ```
 ##### 4. Execute the script:
 ```
-sudo apt-get install software-properties-common
 sudo ./moxogo_install.sh
 ```
 
