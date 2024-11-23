@@ -103,3 +103,9 @@ sudo rm -f /usr/bin/node /usr/local/bin/node
 sudo apt-get remove -y nodejs npm
 sudo apt-get autoremove -y
 ```
+```bash
+source /odoo18/odoo-venv/bin/activate
+cd /odoo18/odoo18-server
+pip3 install -r requirements.txt
+pip3 install babel psycopg2-binary werkzeug lxml python-dateutil pytz pillow gevent greenlet
+```

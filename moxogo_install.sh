@@ -158,23 +158,51 @@ echo -e "\n==== Installing ODOO Requirements ===="
 python3.10 -m venv $OE_HOME/odoo-venv
 source $OE_HOME/odoo-venv/bin/activate
 
-# Install pip packages
-pip3 install wheel
-pip3 install -U pip
+# Install build dependencies
+sudo apt-get install -y python3.10-dev build-essential
+sudo apt-get install -y libpq-dev libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev
+sudo apt-get install -y python3-pip python3-wheel python3-setuptools
+sudo apt-get install -y libgeos-dev libevent-dev
+
+# Upgrade pip and install wheel
+pip3 install --upgrade pip
+pip3 install wheel setuptools
+
+# Install gevent dependencies first
+pip3 install greenlet
+pip3 install cffi
+pip3 install zope.event
+pip3 install zope.interface
+
+# Install pre-built gevent
+pip3 install --no-build-isolation gevent==22.10.2
+
+# Install other critical packages first
+pip3 install babel
 pip3 install psycopg2-binary
-pip3 install num2words
-pip3 install phonenumbers
+pip3 install werkzeug
+pip3 install lxml
 pip3 install python-dateutil
 pip3 install pytz
-pip3 install Werkzeug
-pip3 install Babel
-pip3 install passlib
-pip3 install python-ldap
-pip3 install qrcode
-pip3 install vobject
-pip3 install xlwt
-pip3 install reportlab
 pip3 install pillow
+pip3 install polib
+pip3 install psutil
+pip3 install jinja2
+pip3 install docutils
+pip3 install num2words
+pip3 install python-ldap
+pip3 install vobject
+pip3 install reportlab
+pip3 install requests
+pip3 install urllib3
+
+# Now install from requirements, but skip already installed packages
+pip3 install -r $OE_HOME_EXT/requirements.txt --no-deps
+
+# Create start script with proper environment
+echo -e "#!/bin/bash\n\ncd $OE_HOME\nsource $OE_HOME/odoo-venv/bin/activate\ncd $OE_HOME_EXT\n./odoo-bin --config=/etc/${OE_CONFIG}.conf" > $OE_HOME_EXT/start.sh
+sudo chmod 755 $OE_HOME_EXT/start.sh
+sudo chown -R $OE_USER:$OE_USER $OE_HOME_EXT/start.sh
 
 #--------------------------------------------------
 # Install Wkhtmltopdf
