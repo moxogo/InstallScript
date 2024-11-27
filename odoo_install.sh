@@ -21,13 +21,11 @@ sudo -u postgres createuser -s odoo
 sudo -u postgres psql -c "ALTER USER odoo WITH PASSWORD 'odoo';"
 
 # Install Wkhtmltopdf
-# First, remove the old version if it exists
 echo "Installing Wkhtmltopdf..."
-sudo apt-get install -y xz-utils
-wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.6/wkhtmltox_0.12.6-1.buster_amd64.deb
-sudo dpkg -i wkhtmltox_0.12.6-1.buster_amd64.deb
+wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.6/wkhtmltox_0.12.6-1.focal_amd64.deb
+sudo dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb
 sudo apt-get install -f
-rm wkhtmltox_0.12.6-1.buster_amd64.deb
+rm wkhtmltox_0.12.6-1.focal_amd64.deb
 
 # Create Odoo user
 echo "Creating Odoo system user..."
@@ -39,27 +37,39 @@ sudo mkdir /var/log/odoo
 sudo chown odoo:odoo /var/log/odoo
 
 # Install Python dependencies
+echo "Creating Python virtual environment..."
+sudo -u odoo mkdir -p /opt/odoo/odoo18_venv
+sudo -u odoo python3 -m venv /opt/odoo/odoo18_venv
+source /opt/odoo/odoo18_venv/bin/activate
+
 echo "Installing Python dependencies..."
-sudo -H pip3 install Babel PyPDF2 passlib pillow decorator pyusb greenlet gevent psutil num2words
-sudo -H pip3 install -r https://raw.githubusercontent.com/odoo/odoo/18.0/requirements.txt
+pip install --upgrade pip
+pip install Babel PyPDF2 passlib pillow decorator pyusb greenlet gevent psutil num2words
+pip install -r https://raw.githubusercontent.com/odoo/odoo/18.0/requirements.txt
+
+# Deactivate virtual environment
+deactivate
 
 # Clone Odoo 18
 echo "Cloning Odoo 18..."
-sudo git clone -b 18.0 https://www.github.com/odoo/odoo /odoo/odoo-server
+sudo -u odoo git clone -b 18.0 https://www.github.com/odoo/odoo /opt/odoo/odoo-server
 
 # Create custom config file
 echo "Creating custom config file..."
-sudo cp /odoo/odoo-server/debian/odoo.conf /etc/odoo/odoo.conf
+sudo mkdir -p /etc/odoo
+sudo cp /opt/odoo/odoo-server/debian/odoo.conf /etc/odoo/odoo.conf
 sudo chown odoo: /etc/odoo/odoo.conf
 sudo chmod 640 /etc/odoo/odoo.conf
 
 # Set permissions
 echo "Setting permissions..."
-sudo chown -R odoo: /odoo/
+sudo chown -R odoo: /opt/odoo/
 
 # Create startup file
 echo "Creating startup file..."
 sudo cp /opt/odoo/odoo-server/debian/init.d/odoo /etc/init.d/odoo
+sudo sed -i "s#DAEMON=/usr/bin/odoo#DAEMON=/opt/odoo/odoo18_venv/bin/python /opt/odoo/odoo-server/odoo-bin#" /etc/init.d/odoo
+sudo sed -i "s#CONFIGFILE=\"/etc/odoo/odoo.conf\"#CONFIGFILE=\"/etc/odoo/odoo.conf\"#" /etc/init.d/odoo
 sudo chmod +x /etc/init.d/odoo
 sudo chown root: /etc/init.d/odoo
 
