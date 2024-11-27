@@ -165,7 +165,7 @@ echo -e "\n==== Installing ODOO Requirements ===="
 # Install build dependencies
 sudo apt-get install -y build-essential
 sudo apt-get install -y libpq-dev libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev
-sudo apt-get install -y python3-pip python3-wheel python3-setuptools
+sudo apt-get install -y python3-pip python3-wheel python3-setuptools python3-venv
 sudo apt-get install -y libgeos-dev libevent-dev
 sudo apt-get install -y cython3
 
@@ -173,8 +173,8 @@ sudo apt-get install -y cython3
 curl -sS https://bootstrap.pypa.io/get-pip.py | sudo python3.12
 
 # Create virtual environment
-python3.12 -m venv $OE_HOME/odoo-venv
-source $OE_HOME/odoo-venv/bin/activate
+python3 -m venv $OE_HOME/mxg-venv
+source $OE_HOME/mxg-venv/bin/activate
 
 # Upgrade pip and install wheel
 pip3 install --upgrade pip
@@ -194,7 +194,7 @@ cat > $OE_HOME_EXT/start.sh << 'EOF'
 
 export PYTHONPATH="${PYTHONPATH}:${OE_HOME_EXT}"
 cd $OE_HOME
-source $OE_HOME/odoo-venv/bin/activate
+source $OE_HOME/mxg-venv/bin/activate
 cd $OE_HOME_EXT
 
 # Print Python path and installed packages for debugging
