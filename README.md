@@ -53,6 +53,8 @@ After installing Odoo, you can enhance your server's security by running the sec
 ##### 1. Download the security script:
 ```bash
 sudo wget https://raw.githubusercontent.com/moxogo/InstallScript/refs/heads/main/secure_odoo.sh
+
+sudo wget https://raw.githubusercontent.com/moxogo/InstallScript/refs/heads/main/harden_ubuntu.sh
 ```
 
 ##### 2. Make it executable:
@@ -100,12 +102,12 @@ sudo apt autoremove
 sudo userdel -r odoo
 sudo rm -rf /odoo
 sudo rm -f /usr/bin/node /usr/local/bin/node
-sudo rm -rf /odoo18/odoo-venv
+sudo rm -rf /odoo18/mxg-venv
 sudo apt-get remove -y nodejs npm
 sudo apt-get autoremove -y
 ```
 ```bash
-source /odoo18/odoo-venv/bin/activate
+source /odoo18/mxg-venv/bin/activate
 cd /odoo18/odoo18-server
 pip3 install -r requirements.txt
 pip3 install babel psycopg2-binary werkzeug lxml python-dateutil pytz pillow gevent greenlet
