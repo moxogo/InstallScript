@@ -94,6 +94,237 @@ After running the script, make note of:
 
 **Note**: Make sure to save the database password shown at the end of the script execution, as it will be needed for database management.
 
+## Odoo 18 Docker Production Installation Guide
+
+This repository contains Docker configuration files and installation scripts for deploying Odoo 18 in a production environment.
+
+## Prerequisites
+
+- A VPS/Server with Ubuntu/Debian
+- Domain name pointed to your server
+- Basic knowledge of Docker and Linux commands
+
+## Directory Structure
+
+```bash
+/odoo/
+├── addons/           # Custom addons
+├── config/           # Odoo configuration
+├── logs/            # Log files
+├── nginx/
+│   ├── conf/        # Nginx configuration
+│   ├── ssl/         # SSL certificates
+│   └── letsencrypt/ # Let's Encrypt files
+├── Dockerfile
+├── docker-compose.prod.yml
+├── install_production.sh
+└── .env
+```
+
+## Installation Steps
+
+### 1. Initial Server Setup
+
+```bash
+# Connect to your server
+ssh user@your-server-ip
+
+# Clone the repository or create directory structure
+mkdir -p /odoo
+cd /odoo
+```
+
+### 2. Run Installation Script
+
+```bash
+# Make script executable
+chmod +x install_production.sh
+
+# Run installation script
+./install_production.sh
+```
+
+The script will:
+- Update system packages
+- Install Docker and Docker Compose
+- Create necessary directories
+- Generate secure passwords
+- Set up initial configuration
+
+### 3. Configure Environment
+
+Edit the `.env` file with your settings:
+```bash
+nano .env
+```
+
+Update the following variables:
+```env
+POSTGRES_PASSWORD=your_generated_postgres_password
+ADMIN_PASSWORD=your_generated_admin_password
+DOMAIN=your-domain.com
+EMAIL=your-email@domain.com
+```
+
+### 4. SSL Certificate Setup
+
+```bash
+# Install certbot if not installed by script
+sudo apt-get install -y certbot python3-certbot-nginx
+
+# Get SSL certificate
+sudo certbot certonly --webroot -w /odoo/nginx/letsencrypt -d your-domain.com
+```
+
+### 5. Update Nginx Configuration
+
+Edit the Nginx configuration file:
+```bash
+nano nginx/conf/odoo.conf
+```
+
+Replace `your-domain.com` with your actual domain name.
+
+### 6. Start Services
+
+```bash
+# Build and start containers
+docker-compose -f docker-compose.prod.yml up -d
+
+# Check logs
+docker-compose -f docker-compose.prod.yml logs -f
+```
+
+## Security Setup
+
+### Firewall Configuration
+
+```bash
+# Install and configure UFW
+sudo apt-get install -y ufw
+sudo ufw allow 22
+sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw enable
+
+# Install fail2ban
+sudo apt-get install -y fail2ban
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+```
+
+## Maintenance Commands
+
+### Container Management
+
+```bash
+# Stop services
+docker-compose -f docker-compose.prod.yml down
+
+# Start services
+docker-compose -f docker-compose.prod.yml up -d
+
+# Restart services
+docker-compose -f docker-compose.prod.yml restart
+
+# View logs
+docker-compose -f docker-compose.prod.yml logs -f
+```
+
+### Backup Commands
+
+```bash
+# Backup database
+docker-compose -f docker-compose.prod.yml exec db pg_dump -U odoo postgres > backup.sql
+
+# Backup filestore
+tar -czf filestore_backup.tar.gz /odoo/addons
+```
+
+### Update Commands
+
+```bash
+# Pull latest images
+docker-compose -f docker-compose.prod.yml pull
+
+# Rebuild and restart containers
+docker-compose -f docker-compose.prod.yml up -d --build
+```
+
+## Post-Installation
+
+1. Access Odoo at: https://your-domain.com
+2. Create your first database using the admin password from `.env`
+3. Install required modules
+4. Configure outgoing email servers
+
+## Monitoring
+
+### Log Monitoring
+
+```bash
+# View Odoo logs
+tail -f /odoo/logs/odoo.log
+
+# View Nginx logs
+tail -f /var/log/nginx/access.log
+tail -f /var/log/nginx/error.log
+```
+
+### System Monitoring
+
+```bash
+# Check container status
+docker ps
+
+# Check system resources
+htop
+
+# Check disk usage
+df -h
+```
+
+## Automatic Updates
+
+### SSL Certificate Renewal
+
+```bash
+# Test automatic renewal
+sudo certbot renew --dry-run
+
+# Add to crontab
+echo "0 0 1 * * certbot renew" | sudo tee -a /etc/crontab
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Cannot connect to Odoo**
+   - Check if containers are running: `docker ps`
+   - Check Nginx logs: `tail -f /var/log/nginx/error.log`
+   - Verify SSL certificate: `certbot certificates`
+
+2. **Database connection issues**
+   - Check PostgreSQL logs: `docker-compose -f docker-compose.prod.yml logs db`
+   - Verify environment variables in `.env`
+
+3. **Permission issues**
+   - Run: `sudo chown -R $USER:$USER /odoo`
+   - Check log file permissions: `ls -la /odoo/logs`
+
+## Support
+
+For issues and support:
+1. Check the logs
+2. Review configuration files
+3. Consult Odoo documentation
+4. Check Docker documentation
+
+## License
+
+This installation guide and associated scripts are provided under [Your License].
+
 ## Remove old installations
 If you have multiple versions of Odoo installed, you can remove the old ones by running the following commands:
 ```bash
@@ -111,361 +342,3 @@ source /odoo18/mxg-venv/bin/activate
 cd /odoo18/odoo18-server
 pip3 install -r requirements.txt
 pip3 install babel psycopg2-binary werkzeug lxml python-dateutil pytz pillow gevent greenlet
-```
-
-
-Certainly! Here is the content for "Harden Ubuntu OS" converted into a GitHub markdown page:
-
-# Harden Ubuntu OS
-
-Hardening a Ubuntu OS, specifically version 24.04 and above, involves several steps to improve security. Below is a comprehensive script along with necessary configurations and optional recommendations to help you secure your system.
-
-## Hardening Script for Ubuntu 24.04 and Above
-
-### Script: `harden_ubuntu.sh`
-
-```bash
-#!/bin/bash
-
-echo "Starting Ubuntu Hardening Script..."
-
-# Update and Upgrade System
-echo "Updating and upgrading system packages..."
-sudo apt update -y
-sudo apt upgrade -y
-sudo apt dist-upgrade -y
-
-# Remove Unnecessary Packages
-echo "Removing unnecessary packages..."
-sudo apt autoremove -y
-
-# Install Security Tools
-echo "Installing necessary security tools..."
-sudo apt install -y fail2ban ufw apparmor clamav clamav-daemon unattended-upgrades
-
-# Configure Unattended Upgrades
-echo "Configuring unattended upgrades..."
-sudo cp /etc/apt/apt.conf.d/20auto-upgrades /etc/apt/apt.conf.d/20auto-upgrades.bak
-echo 'APT::Periodic::Update-Package-Lists "1";' | sudo tee /etc/apt/apt.conf.d/20auto-upgrades
-echo 'APT::Periodic::Unattended-Upgrade "1";' | sudo tee -a /etc/apt/apt.conf.d/20auto-upgrades
-
-# Enable and Configure UFW
-echo "Enabling and configuring UFW..."
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-sudo ufw allow 22/tcp  # Allow SSH
-sudo ufw allow 80/tcp  # Allow HTTP
-sudo ufw allow 443/tcp # Allow HTTPS
-sudo ufw enable
-
-# Enable and Configure AppArmor
-echo "Enabling and configuring AppArmor..."
-sudo systemctl enable apparmor
-sudo systemctl start apparmor
-
-# Install and Configure Fail2Ban
-echo "Configuring Fail2Ban..."
-sudo systemctl enable fail2ban
-sudo systemctl start fail2ban
-
-# Configure SSH
-echo "Hardening SSH..."
-sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
-sudo sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
-sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
-sudo systemctl restart sshd
-
-# Install and Configure ClamAV
-echo "Configuring ClamAV..."
-sudo systemctl enable clamav-daemon
-sudo systemctl start clamav-daemon
-sudo freshclam
-sudo clamscan -r / --bell -i
-
-# Hardening File Permissions
-echo "Hardening file permissions..."
-sudo chmod 700 /home/*
-sudo chmod 750 /var/log
-sudo chmod 640 /etc/sudoers
-sudo chmod 640 /etc/sudoers.d/*
-
-# Verify Cron Jobs
-echo "Verifying cron jobs..."
-sudo chmod 600 /etc/crontab
-sudo chmod 600 /etc/cron.hourly
-sudo chmod 600 /etc/cron.daily
-sudo chmod 600 /etc/cron.weekly
-sudo chmod 600 /etc/cron.monthly
-sudo chmod 600 /etc/cron.d
-sudo chmod 600 /etc/cron.deny
-sudo chmod 644 /etc/cron.allow
-
-# Disable Unnecessary Services
-echo "Disabling unnecessary services..."
-sudo systemctl disable bluetooth
-sudo systemctl disable cups
-sudo systemctl disable avahi-daemon
-
-# Set Up Regular Backups
-echo "Setting up regular backups..."
-sudo apt install -y debconf-utils
-sudo debconf-set-selections <<< "debconf debconf/frontend select noninteractive"
-sudo apt install -y backupninja
-sudo sed -i 's|# - day:|  - day:|' /etc/backupninja/nightly.conf
-
-# Enable Automatic Security Updates
-echo "Enabling automatic security updates..."
-sudo sed -i 's|"\${distro_id}:${distro_codename}";|"\${distro_id}:${distro_codename}-security";|' /etc/apt/apt.conf.d/50unattended-upgrades
-
-# Disable Root Login via Console
-echo "Disabling root login via console..."
-sudo passwd -l root
-
-# Install and Configure Firewall GUI (Optional)
-echo "Optionally installing GUFW for GUI management..."
-sudo apt install -y gufw
-
-echo "Ubuntu Hardening Script Completed."
-
-Detailed Explanations and Optional Configurations
-1. Update and Upgrade System
-Command: sudo apt update -y && sudo apt upgrade -y && sudo apt dist-upgrade -y
-Purpose: Ensure the system is up-to-date with the latest security patches.
-2. Remove Unnecessary Packages
-Command: sudo apt autoremove -y
-Purpose: Remove unused packages to reduce attack surface.
-3. Install Security Tools
-Command: sudo apt install -y fail2ban ufw apparmor clamav clamav-daemon unattended-upgrades
-Purpose: Install essential security tools:
-Fail2Ban: Prevents brute-force attacks by banning IP addresses.
-UFW (Uncomplicated Firewall): Simplifies firewall management.
-AppArmor: Application confinement security module.
-ClamAV: Antivirus software.
-Unattended Upgrades: Manages automatic updates.
-4. Configure Unattended Upgrades
-Purpose: Ensure that security updates are applied automatically.
-Configuration:
-echo 'APT::Periodic::Update-Package-Lists "1";' | sudo tee /etc/apt/apt.conf.d/20auto-upgrades
-echo 'APT::Periodic::Unattended-Upgrade "1";' | sudo tee -a /etc/apt/apt.conf.d/20auto-upgrades
-
-5. Enable and Configure UFW
-Purpose: Secure the system by allowing only necessary traffic.
-Configuration:
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-sudo ufw allow 22/tcp  # SSH
-sudo ufw allow 80/tcp  # HTTP
-sudo ufw allow 443/tcp # HTTPS
-sudo ufw enable
-
-6. Enable and Configure AppArmor
-Purpose: Enable AppArmor for application confinement.
-Configuration:
-sudo systemctl enable apparmor
-sudo systemctl start apparmor
-
-7. Install and Configure Fail2Ban
-Purpose: Prevent brute-force attacks by monitoring log files and banning IP addresses.
-Configuration:
-sudo systemctl enable fail2ban
-sudo systemctl start fail2ban
-
-8. Harden SSH
-Purpose: Secure SSH access.
-Configuration:
-sudo sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
-sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
-sudo systemctl restart sshd
-
-9. Install and Configure ClamAV
-Purpose: Scan for malware and viruses.
-Configuration:
-sudo systemctl enable clamav-daemon
-sudo systemctl start clamav-daemon
-sudo freshclam
-sudo clamscan -r / --bell -i
-
-10. Harden File Permissions
-Purpose: Ensure proper file permissions to prevent unauthorized access.
-Configuration:
-sudo chmod 700 /home/*
-sudo chmod 750 /var/log
-sudo chmod 640 /etc/sudoers
-sudo chmod 640 /etc/sudoers.d/*
-
-11. Verify Cron Jobs
-Purpose: Ensure cron jobs are secure.
-Configuration:
-sudo chmod 600 /etc/crontab
-sudo chmod 600 /etc/cron.hourly
-sudo chmod 600 /etc/cron.daily
-sudo chmod 600 /etc/cron.weekly
-sudo chmod 600 /etc/cron.monthly
-sudo chmod 600 /etc/cron.d
-sudo chmod 600 /etc/cron.deny
-sudo chmod 644 /etc/cron.allow
-
-12. Disable Unnecessary Services
-Purpose: Reduce attack vectors by disabling unnecessary services.
-Configuration:
-sudo systemctl disable bluetooth
-sudo systemctl disable cups
-sudo systemctl disable avahi-daemon
-
-13. Set Up Regular Backups
-Purpose: Ensure data is backed up regularly.
-Configuration:
-sudo apt install -y debconf-utils
-sudo debconf-set-selections <<< "debconf debconf/frontend select noninteractive"
-sudo apt install -y backupninja
-sudo sed -i 's|# - day:|  - day:|' /etc/backupninja/nightly.conf
-
-14. Enable Automatic Security Updates
-Purpose: Ensure that security updates are applied automatically.
-Configuration:
-sudo sed -i 's|"\${distro_id}:${distro_codename}";|"\${distro_id}:${distro_codename}-security";|' /etc/apt/apt.conf.d/50unattended-upgrades
-
-15. Disable Root Login via Console
-Purpose: Prevent root login via console to enhance security.
-Configuration:
-sudo passwd -l root
-
-16. Install and Configure Firewall GUI (Optional)
-Purpose: Provide a graphical user interface for managing the UFW firewall.
-Optional Installation:
-sudo apt install -y gufw
-
-17. Secure Bootloader Configuration
-Purpose: Secure the GRUB bootloader to prevent unauthorized access.
-Configuration:
-Set a GRUB password to prevent unauthorized access to the bootloader menu.
-Edit the GRUB configuration file:
-sudo nano /etc/default/grub
-
-Add or modify the following line to set a password:
-GRUB_CMDLINE_LINUX_DEFAULT="text"
-GRUB_CMDLINE_LINUX=""
-GRUB_PASSWORD="your_encrypted_password"
-
-Use grub-mkpasswd-pbkdf2 to generate an encrypted password:
-sudo grub-mkpasswd-pbkdf2
-
-Add the generated password to the GRUB configuration file.
-Update the GRUB configuration:
-sudo update-grub
-
-18. Install and Configure Intrusion Detection System (Optional)
-Purpose: Detect and respond to unauthorized access attempts.
-Optional Installation:
-sudo apt install -y aide
-
-Configuration:
-Initialize the AIDE database:
-sudo aideinit
-
-Link the initial database to the active one:
-sudo mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
-
-19. Additional Security Best Practices
-Purpose: Implement additional security practices to enhance system security.
-Log Management:
-Configure logrotate to manage log files:
-sudo nano /etc/logrotate.conf
-
-Ensure logs are rotated and deleted as needed.
-Auditd:
-Install and configure auditd for system auditing:
-sudo apt install -y auditd audispd-plugins
-sudo systemctl enable auditd
-sudo systemctl start auditd
-
-Configure auditing rules as needed.
-Disable Unnecessary Filesystems:
-Edit /etc/fstab to disable unnecessary filesystems:
-sudo nano /etc/fstab
-
-Comment out or remove entries for cgroup, tmpfs, debugfs, fuse, etc.
-Kernel Parameters:
-Configure kernel parameters for better security:
-sudo nano /etc/sysctl.conf
-
-Add the following lines:
-# Enable IP forwarding
-net.ipv4.ip_forward = 0
-
-# Enable protection against SYN flood
-net.ipv4.tcp_syncookies = 1
-
-# Enable protection against IP spoofing
-net.ipv4.conf.all.rp_filter = 1
-net.ipv4.conf.default.rp_filter = 1
-
-# Disable ICMP redirect acceptance
-net.ipv4.conf.all.accept_redirects = 0
-net.ipv4.conf.default.accept_redirects = 0
-
-# Disable ICMP send redirects
-net.ipv4.conf.all.send_redirects = 0
-net.ipv4.conf.default.send_redirects = 0
-
-# Disable source routing
-net.ipv4.conf.all.accept_source_route = 0
-net.ipv4.conf.default.accept_source_route = 0
-
-# Enable TCP SYN flood protection
-net.ipv4.tcp_synack_retries = 2
-
-# Increase the local port range
-net.ipv4.ip_local_port_range = 1024 65000
-
-# Enable EXEC Shield
-kernel.exec-shield = 1
-kernel.randomize_va_space = 2
-
-20. Postfix Configuration (if applicable)
-Purpose: Secure the Postfix mail server.
-Configuration:
-sudo nano /etc/postfix/main.cf
-
-Ensure the following lines are set:
-smtpd_use_tls = yes
-smtpd_tls_cert_file = /path/to/certificate.crt
-smtpd_tls_key_file = /path/to/private.key
-smtpd_tls_auth_only = yes
-smtpd_recipient_restrictions = permit_sasl_authenticated, permit_mynetworks, reject_unauth_destination
-
-21. Apache Configuration (if applicable)
-Purpose: Secure the Apache web server.
-Configuration:
-sudo nano /etc/apache2/apache2.conf
-
-Ensure the following lines are set:
-ServerTokens Prod
-ServerSignature Off
-TraceEnable Off
-
-Enable security modules like mod_security:
-sudo apt install -y libapache2-mod-security2
-sudo a2enmod security2
-sudo systemctl restart apache2
-
-Final Steps
-Review and Test:
-Review the configuration files and settings to ensure they meet your security requirements.
-Test the system to ensure that all configurations are working as expected without disrupting services.
-Regular Audits:
-Regularly audit your system for vulnerabilities and misconfigurations.
-Use security tools like lynis or OpenVAS for vulnerability scanning.
-Running the Script
-
-To run the script, save it to a file (e.g., harden_ubuntu.sh), make it executable, and execute it:
-
-sudo nano harden_ubuntu.sh
-sudo chmod +x harden_ubuntu.sh
-sudo ./harden_ubuntu.sh
-
-
-By following these steps and configurations, you can significantly enhance the security of your Ubuntu 24.04 and above system.
-
-
-Feel free to copy this markdown content into your GitHub repository. If you need any further assistance or modifications, let me know!
