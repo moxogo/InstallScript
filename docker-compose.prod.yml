@@ -1,3 +1,4 @@
+version: '3.1'
 services:
   nginx:
     image: nginx:latest
@@ -5,9 +6,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/conf:/etc/nginx/conf.d
-      - ./nginx/ssl:/etc/nginx/ssl
-      - ./nginx/letsencrypt:/etc/letsencrypt
+      - ./nginx/conf:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/letsencrypt:/var/www/letsencrypt:ro
       - nginx-web-data:/var/www/html
     depends_on:
       - web
@@ -29,7 +30,7 @@ services:
       - odoo-web-data:/var/lib/odoo
       - ./config:/etc/odoo
       - ./addons:/mnt/extra-addons
-      - /odoo/moxogo18:/mnt/custom-addons
+      - ./odoo/moxogo18:/mnt/custom-addons
       - ./logs:/var/log/odoo
     environment:
       - HOST=db
@@ -43,7 +44,9 @@ services:
       - odoo_network
 
   db:
-    image: postgres:15
+    image: postgres:17
+    ports:
+      - "5432:5432"
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}

@@ -100,20 +100,25 @@ fi
 echo "6. Creating directory structure..."
 sudo mkdir -p /odoo
 cd /odoo
-sudo mkdir -p {config,addons,nginx/conf,nginx/ssl,nginx/letsencrypt,logs,moxogo18}
+sudo mkdir -p {config,addons,nginx/conf,nginx/ssl,nginx/letsencrypt,logs,odoo/moxogo18,static}
 
 # 7. Set proper permissions
 echo "7. Setting permissions..."
 sudo chown -R $USER:$USER /odoo
 sudo chmod -R 755 /odoo
 
-# 8. Generate strong passwords
-echo "8. Generating secure passwords..."
+# 8. Fix module structure
+echo "8. Fixing module structure..."
+chmod +x fix_module_structure.sh
+./fix_module_structure.sh
+
+# 9. Generate strong passwords
+echo "9. Generating secure passwords..."
 POSTGRES_PASSWORD=$(openssl rand -base64 32)
 ADMIN_PASSWORD=$(openssl rand -base64 32)
 
-# 9. Create .env file
-echo "9. Creating .env file..."
+# 10. Create .env file
+echo "10. Creating .env file..."
 cat > .env << EOL
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 ADMIN_PASSWORD=${ADMIN_PASSWORD}
@@ -123,8 +128,8 @@ POSTGRES_USER=odoo
 PGDATA=/var/lib/postgresql/data/pgdata
 EOL
 
-# 10. Final setup and permissions
-echo "10. Setting final permissions..."
+# 11. Final setup and permissions
+echo "11. Setting final permissions..."
 sudo chown -R $USER:$USER .env
 sudo chmod 600 .env
 
