@@ -14,4 +14,9 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Python dependencies
+COPY requirements.custom.txt /tmp/requirements.custom.txt
+RUN pip3 install -r /tmp/requirements.custom.txt && \
+    rm /tmp/requirements.custom.txt
+
 USER odoo

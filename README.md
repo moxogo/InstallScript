@@ -118,6 +118,7 @@ This repository contains Docker configuration files and installation scripts for
 ├── Dockerfile
 ├── docker-compose.prod.yml
 ├── install_production.sh
+├── requirements.custom.txt  # Custom Python dependencies
 └── .env
 ```
 
@@ -143,6 +144,9 @@ sudo docker logs installscript-nginx-1
 ```
 
 ```
+# Rebuild the containers if needed
+docker-compose -f docker-compose.prod.yml build
+
 # Stop the containers
 sudo docker-compose -f docker-compose.prod.yml down
 
@@ -162,7 +166,14 @@ sudo docker exec installscript-nginx-1 ls -l /etc/nginx/conf.d/
 sudo docker exec installscript-nginx-1 tail -f /var/log/nginx/access.log
 sudo docker exec installscript-nginx-1 tail -f /var/log/nginx/error.log
 ```
+```
+# Add moxogo custom addons
+sudo mkdir -p /odoo/moxogo18
+sudo chown -R $USER:$USER /odoo/moxogo18
 
+# Check if Odoo can see the custom addons
+sudo docker logs installscript-web-1 | grep "moxogo"
+``````
 
 ### 2. Run Installation Script
 
@@ -170,11 +181,17 @@ sudo docker exec installscript-nginx-1 tail -f /var/log/nginx/error.log
 # Make script executable
 chmod +x install_production.sh
 
+# Before running the script, stop and disable system Nginx if it exists
+sudo systemctl stop nginx
+sudo systemctl disable nginx
+sudo apt-get remove nginx nginx-common -y  # Optional: only if you want to completely remove system Nginx
+
 # Run installation script
 ./install_production.sh
 ```
 
 The script will:
+- Stop and disable system Nginx if it exists
 - Update system packages
 - Install Docker and Docker Compose
 - Create necessary directories
@@ -196,33 +213,61 @@ DOMAIN=your-domain.com
 EMAIL=your-email@domain.com
 ```
 
-### 4. SSL Certificate Setup
+### 4. Custom Python Dependencies
 
+If your modules require additional Python packages:
+
+1. Edit `requirements.custom.txt`:
 ```bash
-# Install certbot if not installed by script
-sudo apt-get install -y certbot python3-certbot-nginx
-
-# Get SSL certificate
-sudo certbot certonly --webroot -w /odoo/nginx/letsencrypt -d your-domain.com
+nano requirements.custom.txt
 ```
 
-### 5. Update Nginx Configuration
-
-Edit the Nginx configuration file:
-```bash
-nano nginx/conf/odoo.conf
+2. Add your dependencies:
+```txt
+# Example:
+pandas==2.0.0
+numpy==1.24.0
+requests==2.31.0
 ```
 
-Replace `your-domain.com` with your actual domain name.
-
-### 6. Start Services
-
+3. Rebuild the Docker image:
 ```bash
-# Build and start containers
+docker-compose -f docker-compose.prod.yml build
 docker-compose -f docker-compose.prod.yml up -d
+```
 
-# Check logs
-docker-compose -f docker-compose.prod.yml logs -f
+### 5. Custom Addons Configuration
+
+1. Place your custom addons in `/odoo/moxogo18/`
+2. The `addons_path` in `odoo.conf` is configured to include:
+   - `/mnt/extra-addons`
+   - `/mnt/custom-addons`
+   - `/usr/lib/python3/dist-packages/odoo/addons`
+
+3. Verify addons recognition:
+```bash
+docker logs installscript-web-1 | grep "addons paths"
+```
+
+### 6. WebSocket Configuration
+
+The setup includes WebSocket support for real-time features:
+
+1. Odoo Configuration (`config/odoo.conf`):
+```ini
+# WebSocket configuration
+longpolling_port = 8072
+websocket = True
+```
+
+2. Nginx Configuration includes WebSocket proxying:
+```nginx
+# WebSocket support
+location /websocket {
+    proxy_pass http://odoochat;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+}
 ```
 
 ## Security Setup
@@ -342,6 +387,36 @@ echo "0 0 1 * * certbot renew" | sudo tee -a /etc/crontab
 3. **Permission issues**
    - Run: `sudo chown -R $USER:$USER /odoo`
    - Check log file permissions: `ls -la /odoo/logs`
+
+4. **WebSocket connection errors**
+   - Check if port 8072 is accessible
+   - Verify Nginx WebSocket configuration
+   - Check Odoo logs for WebSocket-related errors:
+     ```bash
+     docker logs installscript-web-1 | grep -i "websocket"
+     ```
+   - Ensure proxy_mode and websocket are enabled in odoo.conf
+
+5. **Custom addons not recognized**
+   - Verify the addons path in odoo.conf
+   - Check permissions of the custom addons directory
+   - Update the apps list in Odoo interface
+   - Check Odoo logs for addon loading errors
+
+6. **Python dependency issues**
+   - Check if requirements.custom.txt is properly formatted
+   - Verify the Docker build logs for installation errors
+   - Try installing dependencies manually in the container:
+     ```bash
+     docker exec -it installscript-web-1 pip3 install package_name
+     ```
+
+7. **Nginx port conflicts**
+   - Check if system Nginx is running: `sudo systemctl status nginx`
+   - Stop and disable system Nginx: `sudo systemctl stop nginx` and `sudo systemctl disable nginx`
+   - Check what's using port 80: `sudo lsof -i :80`
+   - Remove system Nginx (optional): `sudo apt-get remove nginx nginx-common -y` and `sudo apt-get autoremove -y`
+   - Clean up Nginx directories: `sudo rm -rf /etc/nginx` and `sudo rm -rf /var/log/nginx`
 
 ## Support
 
