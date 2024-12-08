@@ -59,6 +59,33 @@ handle_nginx() {
     fi
 }
 
+# Function to handle PostgreSQL
+handle_postgres() {
+    echo "Checking for existing PostgreSQL installation..."
+    
+    # Check if PostgreSQL is running
+    if systemctl is-active --quiet postgresql; then
+        echo "PostgreSQL is running on the system"
+        echo "Note: Docker PostgreSQL will use port 5433 instead of 5432"
+        
+        # Optionally stop system PostgreSQL
+        read -p "Do you want to stop the system PostgreSQL? (y/n) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo "Stopping PostgreSQL..."
+            sudo systemctl stop postgresql
+            sudo systemctl disable postgresql
+        fi
+    fi
+
+    # Check if port 5433 is available
+    if netstat -tuln | grep -q ":5433 "; then
+        echo "Warning: Port 5433 is also in use"
+        echo "Please free up either port 5432 or 5433 before continuing"
+        exit 1
+    fi
+}
+
 # 1. Handle existing Nginx and port 80
 echo "1. Handling existing Nginx installation and port conflicts..."
 handle_nginx
@@ -156,6 +183,10 @@ echo "Postgres Password (save this): ${POSTGRES_PASSWORD}"
 echo "Admin Password (save this): ${ADMIN_PASSWORD}"
 echo ""
 echo "=== Remember to save these passwords securely! ==="
+
+# Handle PostgreSQL before starting containers
+echo "Checking PostgreSQL configuration..."
+handle_postgres
 
 # Start the containers
 echo "Starting Docker containers..."
