@@ -195,9 +195,10 @@ handle_postgres
 
 # Copy necessary files to /odoo
 echo "Copying configuration files..."
-cp "$(dirname "$0")/docker-compose.prod.yml" /odoo/
-cp -r "$(dirname "$0")/config" /odoo/
-cp -r "$(dirname "$0")/nginx" /odoo/ 2>/dev/null || true
+SCRIPT_DIR="/root/InstallScript"
+cp "$SCRIPT_DIR/docker-compose.prod.yml" /odoo/
+cp -r "$SCRIPT_DIR/config" /odoo/
+cp -r "$SCRIPT_DIR/nginx" /odoo/ 2>/dev/null || true
 
 # Change to /odoo directory
 cd /odoo
