@@ -28,8 +28,6 @@ services:
     volumes:
       - odoo-web-data:/var/lib/odoo
       - ./config:/etc/odoo
-      - ./addons:/mnt/extra-addons
-      - ./moxogo18:/mnt/custom-addons
       - ./logs:/var/log/odoo
     environment:
       - HOST=db
