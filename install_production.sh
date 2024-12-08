@@ -193,13 +193,19 @@ echo "=== Remember to save these passwords securely! ==="
 echo "Checking PostgreSQL configuration..."
 handle_postgres
 
-# Ensure we're in the correct directory
-cd "$(dirname "$0")"
+# Copy necessary files to /odoo
+echo "Copying configuration files..."
+cp "$(dirname "$0")/docker-compose.prod.yml" /odoo/
+cp -r "$(dirname "$0")/config" /odoo/
+cp -r "$(dirname "$0")/nginx" /odoo/ 2>/dev/null || true
+
+# Change to /odoo directory
+cd /odoo
 
 # Start the containers
 echo "Starting Docker containers..."
-docker-compose -f ./docker-compose.prod.yml down 2>/dev/null || true
-docker-compose -f ./docker-compose.prod.yml up -d
+docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
+docker-compose -f docker-compose.prod.yml up -d
 
 # Check container status
 echo "Checking container status..."
