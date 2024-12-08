@@ -149,6 +149,13 @@ sudo docker-compose -f docker-compose.prod.yml down
 # Start them again
 sudo docker-compose -f docker-compose.prod.yml up -d
 ```
+```
+# Check Nginx configuration
+sudo docker exec installscript-nginx-1 nginx -t
+
+# Check if the configuration file is properly mounted
+sudo docker exec installscript-nginx-1 ls -l /etc/nginx/conf.d/
+```
 
 ### 2. Run Installation Script
 
