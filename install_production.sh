@@ -141,8 +141,8 @@ sudo chmod -R 755 /odoo
 
 # 8. Fix module structure
 echo "8. Fixing module structure..."
-chmod +x fix_module_structure.sh
-./fix_module_structure.sh
+# chmod +x fix_module_structure.sh
+# ./fix_module_structure.sh
 
 # 9. Generate strong passwords
 echo "9. Generating secure passwords..."
@@ -193,10 +193,13 @@ echo "=== Remember to save these passwords securely! ==="
 echo "Checking PostgreSQL configuration..."
 handle_postgres
 
+# Ensure we're in the correct directory
+cd "$(dirname "$0")"
+
 # Start the containers
 echo "Starting Docker containers..."
-docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f ./docker-compose.prod.yml down 2>/dev/null || true
+docker-compose -f ./docker-compose.prod.yml up -d
 
 # Check container status
 echo "Checking container status..."
