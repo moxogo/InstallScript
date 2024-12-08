@@ -9,7 +9,6 @@ services:
       - ./nginx/conf:/etc/nginx/conf.d:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./nginx/letsencrypt:/var/www/letsencrypt:ro
-      - nginx-web-data:/var/www/html
     depends_on:
       - web
     restart: always
@@ -30,7 +29,7 @@ services:
       - odoo-web-data:/var/lib/odoo
       - ./config:/etc/odoo
       - ./addons:/mnt/extra-addons
-      - ./odoo/moxogo18:/mnt/custom-addons
+      - ./moxogo18:/mnt/custom-addons
       - ./logs:/var/log/odoo
     environment:
       - HOST=db
