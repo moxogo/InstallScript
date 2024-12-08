@@ -43,18 +43,23 @@ handle_nginx() {
 
     # Check for any process using port 80
     if netstat -tuln | grep -q ":80 "; then
-        echo "Warning: Port 80 is in use. Checking process..."
-        pid=$(sudo lsof -t -i:80)
-        if [ ! -z "$pid" ]; then
-            process=$(ps -p $pid -o comm=)
-            echo "Process using port 80: $process (PID: $pid)"
-            echo "Attempting to stop the process..."
-            sudo kill -15 $pid
-            sleep 2
-            if netstat -tuln | grep -q ":80 "; then
-                echo "Failed to free port 80. Please stop the process manually."
-                exit 1
-            fi
+        echo "Warning: Port 80 is in use."
+        echo "Please ensure no other web server (like Apache or another instance of Nginx) is running."
+        echo "You can find the process using port 80 with: sudo netstat -tulpn | grep :80"
+        
+        # Try to identify the process
+        process_info=$(sudo netstat -tulpn | grep :80)
+        if [ ! -z "$process_info" ]; then
+            echo "Process using port 80:"
+            echo "$process_info"
+        fi
+        
+        read -p "Press Enter to continue once port 80 is free, or Ctrl+C to exit..."
+        
+        # Check again if port is free
+        if netstat -tuln | grep -q ":80 "; then
+            echo "Port 80 is still in use. Please free up the port before continuing."
+            exit 1
         fi
     fi
 }
