@@ -22,9 +22,9 @@ services:
     image: odoo:18.0
     depends_on:
       - db
-    expose:
-      - "8069"
-      - "8072"
+    ports:  # Changed from expose to ports for debugging
+      - "8069:8069"
+      - "8072:8072"
     volumes:
       - odoo-web-data:/var/lib/odoo
       - ./config:/etc/odoo

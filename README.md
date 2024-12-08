@@ -157,6 +157,13 @@ sudo docker exec installscript-nginx-1 nginx -t
 sudo docker exec installscript-nginx-1 ls -l /etc/nginx/conf.d/
 ```
 
+```
+# Check Nginx logs
+sudo docker exec installscript-nginx-1 tail -f /var/log/nginx/access.log
+sudo docker exec installscript-nginx-1 tail -f /var/log/nginx/error.log
+```
+
+
 ### 2. Run Installation Script
 
 ```bash
