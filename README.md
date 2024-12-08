@@ -134,6 +134,15 @@ mkdir -p /odoo
 cd /odoo
 ```
 
+```
+git clone https://github.com/moxogo/InstallScript.git
+```
+```
+sudo docker logs installscript-web-1
+sudo docker logs installscript-nginx-1
+```
+
+
 ### 2. Run Installation Script
 
 ```bash
