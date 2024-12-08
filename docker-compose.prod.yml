@@ -35,8 +35,8 @@ services:
       - USER=odoo
       - PASSWORD=${POSTGRES_PASSWORD}
       - PROXY_MODE=True
-      - LOGFILE=/var/log/odoo/odoo.log
-      - LOGROTATE=True
+      - LONGPOLLING_PORT=8072
+      - WEB_SOCKET=True
     restart: always
     networks:
       - odoo_network

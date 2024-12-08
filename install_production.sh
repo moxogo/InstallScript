@@ -57,6 +57,25 @@ DOMAIN=your-domain.com
 EMAIL=your-email@domain.com
 EOL
 
+# 9. Create necessary directories and set permissions
+echo "9. Creating directories and setting permissions..."
+# Create logs directory for Odoo
+sudo mkdir -p logs
+sudo chown -R 101:101 logs  # 101 is the odoo user in the container
+sudo chmod 755 logs
+
+# Create config directory if it doesn't exist
+sudo mkdir -p config
+sudo chmod 755 config
+
+# Create addons directory if it doesn't exist
+sudo mkdir -p addons
+sudo chmod 755 addons
+
+# Create nginx directories
+sudo mkdir -p nginx/conf nginx/ssl nginx/letsencrypt
+sudo chmod -R 755 nginx
+
 echo "=== Installation completed ==="
 echo ""
 echo "Next steps:"
