@@ -26,9 +26,11 @@ services:
       - "8069:8069"
       - "8072:8072"
     volumes:
-      - odoo-web-data:/var/lib/odoo
+      - odoo-web-data:/odoo-server
       - ./config:/etc/odoo
       - ./logs:/var/log/odoo
+      - ./addons:/mnt/extra-addons
+      - ./moxogo18:/mnt/moxogo18
     environment:
       - HOST=db
       - USER=odoo

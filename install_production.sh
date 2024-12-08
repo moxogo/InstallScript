@@ -127,7 +127,7 @@ fi
 echo "6. Creating directory structure..."
 sudo mkdir -p /odoo
 cd /odoo
-sudo mkdir -p {config,addons,nginx/conf,nginx/ssl,nginx/letsencrypt,logs,odoo/moxogo18,static}
+sudo mkdir -p {config,addons,nginx/conf,nginx/ssl,nginx/letsencrypt,logs,moxogo18,static}
 
 # 7. Set proper permissions
 echo "7. Setting permissions..."
