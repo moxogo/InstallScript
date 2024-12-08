@@ -142,6 +142,13 @@ sudo docker logs installscript-web-1
 sudo docker logs installscript-nginx-1
 ```
 
+```
+# Stop the containers
+sudo docker-compose -f docker-compose.prod.yml down
+
+# Start them again
+sudo docker-compose -f docker-compose.prod.yml up -d
+```
 
 ### 2. Run Installation Script
 
