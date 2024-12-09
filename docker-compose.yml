@@ -47,6 +47,7 @@ services:
       - ./addons:/mnt/extra-addons
       - ./backups:/mnt/backups
       - ./moxogo18:/mnt/moxogo18
+      - odoo-sessions:/mnt/.local
     environment:
       - DB_HOST=db
       - DB_PORT=5432
@@ -59,6 +60,7 @@ services:
       - PROXY_MODE=True
       - LONGPOLLING_PORT=${ODOO_CHAT_PORT:-8072}
       - WEB_SOCKET=True
+    user: odoo
     restart: always
     networks:
       - odoo_network
@@ -101,6 +103,7 @@ volumes:
   certbot-etc:
   certbot-var:
   webroot-path:
+  odoo-sessions:
 
 networks:
   odoo_network:

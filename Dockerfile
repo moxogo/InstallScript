@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Create directory and set permissions
+RUN mkdir -p /mnt/.local && chown -R odoo:odoo /mnt/.local && chmod 700 /mnt/.local
+
 # Install Python dependencies
 COPY requirements.custom.txt /tmp/requirements.custom.txt
 RUN pip3 install -r /tmp/requirements.custom.txt && \
