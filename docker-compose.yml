@@ -46,9 +46,11 @@ services:
       - ./backups:/mnt/backups
       - ./moxogo18:/mnt/moxogo18
     environment:
-      - HOST=db
-      - USER=${DB_USER:-odoo}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-odoo}
       - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${DB_NAME:-postgres}
       - PROXY_MODE=True
       - LONGPOLLING_PORT=${ODOO_CHAT_PORT:-8072}
       - WEB_SOCKET=True
@@ -73,7 +75,6 @@ services:
 
   certbot:
     image: certbot/certbot
-    container_name: certbot
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/lib/letsencrypt
