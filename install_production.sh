@@ -179,10 +179,10 @@ echo "1. Update the .env file with your domain and email"
 echo "2. Get SSL certificate:"
 echo "   sudo certbot certonly --webroot -w /odoo/nginx/letsencrypt -d your-domain.com"
 echo "3. Start the services:"
-echo "   docker-compose -f docker-compose.prod.yml up -d"
+echo "   docker-compose -f docker-compose.yml up -d"
 echo "1. Update your domain in nginx/conf/odoo.conf"
-echo "2. Start the services with: docker-compose -f docker-compose.prod.yml up -d"
-echo "3. Check the logs with: docker-compose -f docker-compose.prod.yml logs -f"
+echo "2. Start the services with: docker-compose -f docker-compose.yml up -d"
+echo "3. Check the logs with: docker-compose -f docker-compose.yml logs -f"
 echo ""
 echo "Postgres Password (save this): ${POSTGRES_PASSWORD}"
 echo "Admin Password (save this): ${ADMIN_PASSWORD}"
@@ -196,7 +196,7 @@ handle_postgres
 # Copy necessary files to /odoo
 echo "Copying configuration files..."
 SCRIPT_DIR="/root/InstallScript"
-cp "$SCRIPT_DIR/docker-compose.prod.yml" /odoo/
+cp "$SCRIPT_DIR/docker-compose.yml" /odoo/
 cp -r "$SCRIPT_DIR/config" /odoo/
 cp -r "$SCRIPT_DIR/nginx" /odoo/ 2>/dev/null || true
 
@@ -205,8 +205,8 @@ cd /odoo
 
 # Start the containers
 echo "Starting Docker containers..."
-docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.yml down 2>/dev/null || true
+docker-compose -f docker-compose.yml up -d
 
 # Check container status
 echo "Checking container status..."
