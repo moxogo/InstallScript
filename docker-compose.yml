@@ -6,6 +6,7 @@ services:
       - "${NGINX_SSL_PORT:-443}:443"
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d:ro
+      - ./nginx/conf/generate_config.sh:/etc/nginx/conf.d/generate_config.sh:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./nginx/letsencrypt:/var/www/letsencrypt:ro
       - certbot-etc:/etc/letsencrypt
@@ -24,6 +25,7 @@ services:
       - SERVER_NAME=${SERVER_NAME:-localhost}
     command: >
       /bin/bash -c "cd /etc/nginx/conf.d && 
+      chmod +x generate_config.sh &&
       ./generate_config.sh --odoo-host $$ODOO_HOST --odoo-port $$ODOO_PORT 
       --chat-port $$ODOO_CHAT_PORT --nginx-port $$NGINX_PORT 
       --server-name $$SERVER_NAME && nginx -g 'daemon off;'"
