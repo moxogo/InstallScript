@@ -270,6 +270,56 @@ location /websocket {
 }
 ```
 
+## Configuration
+
+The installation can be customized using environment variables. Follow these steps to configure your installation:
+
+1. Copy the environment template file:
+   ```bash
+   cp .env.template .env
+   ```
+
+2. Edit the `.env` file to set your desired configuration:
+   ```bash
+   # Nginx Configuration
+   NGINX_PORT=80              # Main HTTP port
+   NGINX_SSL_PORT=443        # HTTPS port
+   SERVER_NAME=localhost     # Your domain name or IP
+
+   # Odoo Configuration
+   ODOO_PORT=8069           # Odoo web interface port
+   ODOO_CHAT_PORT=8072      # Odoo chat/longpolling port
+
+   # Database Configuration
+   DB_PORT=5432             # PostgreSQL port
+   DB_NAME=postgres         # Database name
+   DB_USER=odoo            # Database user
+   POSTGRES_PASSWORD=your_secure_password  # Database password
+   ```
+
+3. If you need to use different ports (e.g., if some ports are already in use):
+   ```bash
+   # Example: Using alternative ports
+   NGINX_PORT=8080
+   ODOO_PORT=8088
+   ODOO_CHAT_PORT=8089
+   DB_PORT=5434
+   ```
+
+4. For production deployment with a domain:
+   ```bash
+   # Production settings example
+   SERVER_NAME=yourdomain.com
+   NGINX_PORT=80
+   NGINX_SSL_PORT=443
+   ```
+
+The configuration is flexible and allows you to:
+- Change any port number to avoid conflicts
+- Set up multiple instances on different ports
+- Configure for both development and production environments
+- Use domain names or IP addresses
+
 ## Security Setup
 
 ### Firewall Configuration

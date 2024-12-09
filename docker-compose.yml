@@ -1,21 +1,54 @@
-version: '3.8'
-
 services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "${NGINX_PORT:-80}:80"
+      - "${NGINX_SSL_PORT:-443}:443"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/letsencrypt:/var/www/letsencrypt:ro
+    depends_on:
+      - web
+    restart: always
+    networks:
+      - odoo_network
+    environment:
+      - ODOO_HOST=web
+      - ODOO_PORT=${ODOO_PORT:-8069}
+      - ODOO_CHAT_PORT=${ODOO_CHAT_PORT:-8072}
+      - NGINX_PORT=${NGINX_PORT:-80}
+      - SERVER_NAME=${SERVER_NAME:-localhost}
+    command: >
+      /bin/bash -c "cd /etc/nginx/conf.d && 
+      ./generate_config.sh --odoo-host $$ODOO_HOST --odoo-port $$ODOO_PORT 
+      --chat-port $$ODOO_CHAT_PORT --nginx-port $$NGINX_PORT 
+      --server-name $$SERVER_NAME && nginx -g 'daemon off;'"
+
   web:
+    build: 
+      context: .
+      dockerfile: Dockerfile
     image: odoo:18.0
     depends_on:
       - db
     ports:
-      - "8069:8069"
-      - "8072:8072"  # Live chat port
+      - "${ODOO_PORT:-8069}:8069"
+      - "${ODOO_CHAT_PORT:-8072}:8072"
     volumes:
-      - odoo-web-data:/var/lib/odoo
+      - odoo-web-data:/odoo-server
       - ./config:/etc/odoo
+      - ./logs:/var/log/odoo
       - ./addons:/mnt/extra-addons
+      - ./backups:/mnt/backups
+      - ./moxogo18:/mnt/moxogo18
     environment:
       - HOST=db
       - USER=odoo
-      - PASSWORD=odoo
+      - PASSWORD=${POSTGRES_PASSWORD}
+      - PROXY_MODE=True
+      - LONGPOLLING_PORT=${ODOO_CHAT_PORT:-8072}
+      - WEB_SOCKET=True
     restart: always
     networks:
       - odoo_network
@@ -23,11 +56,11 @@ services:
   db:
     image: postgres:17
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     environment:
-      - POSTGRES_DB=postgres
-      - POSTGRES_PASSWORD=odoo
-      - POSTGRES_USER=odoo
+      - POSTGRES_DB=${DB_NAME:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${DB_USER:-odoo}
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - odoo-db-data:/var/lib/postgresql/data/pgdata
@@ -38,6 +71,7 @@ services:
 volumes:
   odoo-web-data:
   odoo-db-data:
+  nginx-web-data:
 
 networks:
   odoo_network:
