@@ -19,6 +19,15 @@ trap 'handle_error ${LINENO} $?' ERR
 handle_nginx() {
     echo "Checking for existing Nginx installation..."
     
+    # Function to check if port 80 is in use
+    check_port_80() {
+        if sudo lsof -i :80 >/dev/null 2>&1; then
+            return 0  # Port is in use
+        else
+            return 1  # Port is free
+        fi
+    }
+
     # Stop and disable system Nginx
     if systemctl is-active --quiet nginx; then
         echo "Stopping system Nginx..."
@@ -42,26 +51,37 @@ handle_nginx() {
     fi
 
     # Check for any process using port 80
-    if netstat -tuln | grep -q ":80 "; then
-        echo "Warning: Port 80 is in use."
-        echo "Please ensure no other web server (like Apache or another instance of Nginx) is running."
-        echo "You can find the process using port 80 with: sudo netstat -tulpn | grep :80"
+    if check_port_80; then
+        echo "Warning: Port 80 is still in use after stopping Nginx."
+        echo "Checking processes using port 80:"
+        sudo lsof -i :80
         
-        # Try to identify the process
-        process_info=$(sudo netstat -tulpn | grep :80)
-        if [ ! -z "$process_info" ]; then
-            echo "Process using port 80:"
-            echo "$process_info"
+        echo "Attempting to identify and stop processes..."
+        
+        # Try to find and stop any remaining Nginx processes
+        if pgrep nginx >/dev/null; then
+            echo "Found remaining Nginx processes. Stopping them..."
+            sudo pkill nginx
         fi
         
-        read -p "Press Enter to continue once port 80 is free, or Ctrl+C to exit..."
+        # Wait a moment and check again
+        sleep 2
         
-        # Check again if port is free
-        if netstat -tuln | grep -q ":80 "; then
-            echo "Port 80 is still in use. Please free up the port before continuing."
-            exit 1
+        if check_port_80; then
+            echo "Port 80 is still in use. Please check the following processes:"
+            sudo lsof -i :80
+            echo "You may need to manually stop these processes."
+            read -p "Press Enter to continue once port 80 is free, or Ctrl+C to exit..."
+            
+            # Final check
+            if check_port_80; then
+                echo "Port 80 is still in use. Please free up the port before continuing."
+                exit 1
+            fi
         fi
     fi
+
+    echo "Port 80 is now available for use."
 }
 
 # Function to handle PostgreSQL
