@@ -6,9 +6,9 @@ services:
       - "${NGINX_SSL_PORT:-443}:443"
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d:ro
-      - ./nginx/conf/generate_config.sh:/etc/nginx/conf.d/generate_config.sh:
+      - ./nginx/conf/generate_config.sh:/etc/nginx/conf.d/generate_config.sh
       - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./nginx/letsencrypt:/var/www/letsencrypt:
+      - ./nginx/letsencrypt:/var/www/letsencrypt
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/lib/letsencrypt
       - webroot-path:/var/www/html
@@ -106,7 +106,6 @@ services:
 volumes:
   odoo-web-data:
   odoo-db-data:
-  nginx-web-data:
   certbot-etc:
   certbot-var:
   webroot-path:
