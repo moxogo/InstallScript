@@ -4,48 +4,11 @@ services:
     restart: unless-stopped
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./nginx/letsencrypt:/etc/letsencrypt:ro
-      - certbot-webroot:/var/www/html
       - nginx_conf:/etc/nginx/conf.d
     ports:
       - "80:80"
       - "443:443"
-    environment:
-      NGINX_HOST: mxg18.mxgsoft.com
     command: nginx -g 'daemon off;'
-    depends_on:
-      - web
-    networks:
-      - odoo_network
-
-  web:
-    build: 
-      context: .
-      dockerfile: Dockerfile
-    image: odoo:18.0
-    depends_on:
-      db:
-        condition: service_healthy
-    ports:
-      - "9018:8069"
-      - "8072:8072"
-    volumes:
-      - odoo-web-data:/var/lib/odoo
-      - ./config:/etc/odoo
-      - ./logs:/var/log/odoo
-      - ./addons:/mnt/extra-addons
-      - ./moxogo18:/mnt/extra-addons/moxogo18
-      - ./backups:/mnt/backups
-      - odoo-sessions:/mnt/.local
-    environment:
-      POSTGRES_USER: odoo
-      POSTGRES_PASSWORD: odoo123
-      POSTGRES_DB: odoo
-      ADMIN_PASSWORD: admin
-    command: ["--config=/etc/odoo/odoo.conf"]
-    user: odoo
-    restart: always
     networks:
       - odoo_network
 
@@ -68,20 +31,67 @@ services:
     networks:
       - odoo_network
 
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - ./nginx/letsencrypt:/etc/letsencrypt
-      - ./nginx/ssl:/etc/nginx/ssl
-      - certbot-webroot:/var/www/html
+  web:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: odoo:18.0
     depends_on:
-      - nginx
-    command: certonly --webroot --webroot-path=/var/www/html --email wizearch55@gmail.com --agree-tos --no-eff-email -d mxg18.mxgsoft.com
+      db:
+        condition: service_healthy
+    ports:
+      - "9018:8069"
+      - "8072:8072"
+    volumes:
+      - odoo-web-data:/var/lib/odoo
+      - ./config:/etc/odoo
+      - ./addons:/mnt/extra-addons
+      - ./moxogo18:/mnt/extra-addons/moxogo18
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo123
+      POSTGRES_DB: odoo
+      ADMIN_PASSWORD: admin
+    command: [
+      "--config=/etc/odoo/odoo.conf",
+      "--database=odoo",
+      "--init=base",
+      "--stop-after-init"
+    ]
+    restart: "no"
+    networks:
+      - odoo_network
+
+  odoo:
+    image: odoo:18.0
+    depends_on:
+      web:
+        condition: service_completed_successfully
+    ports:
+      - "9018:8069"
+      - "8072:8072"
+    volumes:
+      - odoo-web-data:/var/lib/odoo
+      - ./config:/etc/odoo
+      - ./addons:/mnt/extra-addons
+      - ./moxogo18:/mnt/extra-addons/moxogo18
+      - ./logs:/var/log/odoo
+      - ./backups:/mnt/backups
+      - odoo-sessions:/mnt/.local
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo123
+      POSTGRES_DB: odoo
+      ADMIN_PASSWORD: admin
+    command: ["--config=/etc/odoo/odoo.conf", "-i", "base"]
+    user: odoo
+    restart: unless-stopped
+    networks:
+      - odoo_network
 
 volumes:
   odoo-web-data:
   odoo-db-data:
-  certbot-webroot:
   nginx_conf:
   odoo-sessions:
 
