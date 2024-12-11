@@ -50,6 +50,7 @@ services:
         source: ./moxogo18
         target: /mnt/extra-addons/moxogo18
         read_only: true
+        consistency: cached
       - ./backups:/mnt/backups
       - odoo-sessions:/mnt/.local
     environment:
