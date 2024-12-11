@@ -1,10 +1,11 @@
 [options]
 admin_passwd = ${ADMIN_PASSWORD}
+
+# Database settings
 db_host = db
 db_port = 5432
 db_user = ${POSTGRES_USER}
 db_password = ${POSTGRES_PASSWORD}
-db_name = ${POSTGRES_DB}
 db_sslmode = disable
 db_maxconn = 64
 db_encoding = UTF8
@@ -14,11 +15,16 @@ http_port = ${ODOO_PORT}
 longpolling_port = ${ODOO_CHAT_PORT}
 proxy_mode = True
 xmlrpc_port = ${ODOO_PORT}
+
+# Addons
 addons_path = /mnt/extra-addons,/mnt/extra-addons/moxogo18,/usr/lib/python3/dist-packages/odoo/addons
+
+# Logging
 logfile = /var/log/odoo/odoo.log
 logrotate = True
 log_level = info
-log_handler = [':INFO']
+
+# Data directory
 data_dir = /mnt/.local/
 
 # Performance tuning
@@ -38,6 +44,7 @@ server_wide_modules = base,web
 # Optimization
 transient_age_limit = 1.0
 osv_memory_count_limit = False
-db_template = template0
+
+# Database
 unaccent = True
 dev_mode = reload

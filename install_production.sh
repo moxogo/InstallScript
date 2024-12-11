@@ -223,15 +223,6 @@ cp -r "$SCRIPT_DIR/nginx" /odoo/ 2>/dev/null || true
 # Change to /odoo directory
 cd /odoo
 
-# Start the containers
-echo "Starting Docker containers..."
-docker-compose -f docker-compose.yml down 2>/dev/null || true
-docker-compose -f docker-compose.yml up -d
-
-# Check container status
-echo "Checking container status..."
-docker ps
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -254,6 +245,14 @@ else
     exit 1
 fi
 
+# Set default values if not in .env
+POSTGRES_DB=${POSTGRES_DB:-odoo}
+POSTGRES_USER=${POSTGRES_USER:-odoo}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-odoo}
+ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+ODOO_PORT=${ODOO_PORT:-8069}
+ODOO_CHAT_PORT=${ODOO_CHAT_PORT:-8072}
+
 # Create necessary directories
 log "Creating directories..."
 mkdir -p ./nginx/ssl
@@ -261,6 +260,7 @@ mkdir -p ./nginx/letsencrypt
 mkdir -p ./nginx/conf
 mkdir -p ./config
 mkdir -p ./addons
+mkdir -p ./logs/odoo
 
 # Copy configuration files
 log "Copying configuration files..."
@@ -286,8 +286,8 @@ fi
 log "Initial installation completed successfully!"
 log "You can now run './ssl-setup.sh' to configure SSL"
 log "Services are accessible at:"
-log "- Odoo: http://localhost:$ODOO_PORT"
-log "- Chat: http://localhost:$ODOO_CHAT_PORT"
+log "- Odoo: http://localhost:${ODOO_PORT}"
+log "- Chat: http://localhost:${ODOO_CHAT_PORT}"
 echo ""
 echo "Your Odoo server is now available at:"
-echo "http://$(wget -qO- ipv4.icanhazip.com):$ODOO_PORT"
+echo "http://$(wget -qO- ipv4.icanhazip.com):${ODOO_PORT}"
