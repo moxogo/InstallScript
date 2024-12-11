@@ -12,7 +12,7 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      NGINX_HOST: localhost
+      NGINX_HOST: mxg18.mxgsoft.com
     command: nginx -g 'daemon off;'
     depends_on:
       - web
@@ -35,11 +35,7 @@ services:
       - ./config:/etc/odoo
       - ./logs:/var/log/odoo
       - ./addons:/mnt/extra-addons
-      - type: bind
-        source: ./moxogo18
-        target: /mnt/extra-addons/moxogo18
-        read_only: true
-        consistency: cached
+      - ./moxogo18:/mnt/extra-addons/moxogo18
       - ./backups:/mnt/backups
       - odoo-sessions:/mnt/.local
     environment:
@@ -63,8 +59,6 @@ services:
       POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
       - odoo-db-data:/var/lib/postgresql/data/pgdata
-      - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
-    command: postgres -c 'hba_file=/etc/postgresql/pg_hba.conf'
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U odoo"]
       interval: 10s
@@ -78,10 +72,11 @@ services:
     image: certbot/certbot
     volumes:
       - ./nginx/letsencrypt:/etc/letsencrypt
+      - ./nginx/ssl:/etc/nginx/ssl
       - certbot-webroot:/var/www/html
     depends_on:
       - nginx
-    command: certonly --webroot --webroot-path=/var/www/html --email ${EMAIL} --agree-tos --no-eff-email --force-renewal -d ${DOMAIN}
+    command: certonly --webroot --webroot-path=/var/www/html --email admin@mxgsoft.com --agree-tos --no-eff-email -d mxg18.mxgsoft.com
 
 volumes:
   odoo-web-data:
