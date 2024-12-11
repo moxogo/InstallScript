@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   nginx:
     image: nginx:alpine
@@ -54,8 +56,8 @@ services:
     environment:
       - POSTGRES_DB=odoo
       - POSTGRES_USER=odoo
-      - POSTGRES_PASSWORD=odoo
-      - ADMIN_PASSWORD=admin
+      - POSTGRES_PASSWORD=odoo123
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
       - ODOO_PORT=${ODOO_PORT:-8069}
       - ODOO_CHAT_PORT=${ODOO_CHAT_PORT:-8072}
     command: ["--config=/etc/odoo/odoo.conf"]
@@ -70,7 +72,7 @@ services:
       - "${DB_PORT:-5432}:5432"
     environment:
       - POSTGRES_DB=odoo
-      - POSTGRES_PASSWORD=odoo
+      - POSTGRES_PASSWORD=odoo123
       - POSTGRES_USER=odoo
       - PGDATA=/var/lib/postgresql/data/pgdata
       - POSTGRES_HOST_AUTH_METHOD=md5
