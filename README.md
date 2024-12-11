@@ -320,6 +320,83 @@ The configuration is flexible and allows you to:
 - Configure for both development and production environments
 - Use domain names or IP addresses
 
+## SSL Configuration and Automation
+
+### Prerequisites
+- Domain name properly configured to point to your server IP
+- Ports 80 and 443 open on your firewall
+- Docker and docker-compose installed
+- Root access to the server
+
+### Environment Variables
+Create or update your `.env` file with the following variables:
+```bash
+DOMAIN=your-domain.com
+EMAIL=your-email@example.com
+ENABLE_SSL=True
+```
+
+### SSL Setup Instructions
+
+1. Make the SSL setup script executable:
+```bash
+chmod +x ssl-setup.sh
+```
+
+2. Run the SSL setup script:
+```bash
+./ssl-setup.sh
+```
+
+The script will:
+- Verify environment variables
+- Install required packages (cron, certbot)
+- Create necessary directories
+- Obtain SSL certificates from Let's Encrypt
+- Configure automatic renewal
+- Set up Nginx with SSL
+- Verify the SSL installation
+
+### Automatic SSL Renewal
+- SSL certificates will automatically renew daily at 12:00
+- Renewal script location: `/root/renew-ssl.sh`
+- Cron job is automatically configured
+
+### Manual SSL Operations
+
+To manually renew certificates:
+```bash
+/root/renew-ssl.sh
+```
+
+To check SSL certificate status:
+```bash
+docker-compose exec nginx openssl x509 -in /etc/letsencrypt/live/$DOMAIN/cert.pem -text -noout
+```
+
+To verify SSL configuration:
+```bash
+curl -vI https://$DOMAIN
+```
+
+### Troubleshooting
+
+1. If certificate renewal fails:
+   - Check domain DNS settings
+   - Verify ports 80 and 443 are open
+   - Check nginx logs: `docker-compose logs nginx`
+   - Check certbot logs: `docker-compose logs certbot`
+
+2. If nginx fails to start:
+   - Check SSL certificate paths
+   - Verify nginx configuration
+   - Check error logs: `docker-compose logs nginx`
+
+3. If cron jobs aren't running:
+   - Check cron service: `systemctl status cron`
+   - Verify cron job: `crontab -l`
+   - Check root's mail for cron output: `mail`
+
 ## Security Setup
 
 ### Firewall Configuration
