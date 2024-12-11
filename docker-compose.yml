@@ -46,7 +46,7 @@ services:
       - ./config:/etc/odoo
       - ./logs:/var/log/odoo
       - ./addons:/mnt/extra-addons
-      - ./moxogo18:/mnt/extra-addons/moxogo18
+      - ./moxogo18:/mnt/extra-addons/moxogo18:ro
       - ./backups:/mnt/backups
       - odoo-sessions:/mnt/.local
     environment:
@@ -79,7 +79,7 @@ services:
       - POSTGRES_PASSWORD=odoo123
       - POSTGRES_USER=odoo
       - PGDATA=/var/lib/postgresql/data/pgdata
-      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_HOST_AUTH_METHOD=md5
     volumes:
       - odoo-db-data:/var/lib/postgresql/data/pgdata
       - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
