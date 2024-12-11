@@ -44,9 +44,9 @@ services:
       - odoo-web-data:/odoo-server
       - ./config:/etc/odoo:ro
       - ./logs:/var/log/odoo
-      - ./addons:/mnt/extra-addons:ro
+      - ./addons:/mnt/extra-addons
+      - ./moxogo18:/mnt/extra-addons/moxogo18
       - ./backups:/mnt/backups
-      - ./moxogo18:/mnt/extra-addons/moxogo18:ro
       - odoo-sessions:/mnt/.local
     environment:
       - DB_HOST=db
