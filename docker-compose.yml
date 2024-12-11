@@ -1,17 +1,4 @@
 services:
-  nginx:
-    image: nginx:alpine
-    restart: unless-stopped
-    volumes:
-      - ./nginx/conf:/etc/nginx/conf.d:ro
-      - nginx_conf:/etc/nginx/conf.d
-    ports:
-      - "80:80"
-      - "443:443"
-    command: nginx -g 'daemon off;'
-    networks:
-      - odoo_network
-
   db:
     image: postgres:16
     environment:
@@ -47,34 +34,6 @@ services:
       - ./config:/etc/odoo
       - ./addons:/mnt/extra-addons
       - ./moxogo18:/mnt/extra-addons/moxogo18
-    environment:
-      POSTGRES_USER: odoo
-      POSTGRES_PASSWORD: odoo123
-      POSTGRES_DB: odoo
-      ADMIN_PASSWORD: admin
-    command: [
-      "--config=/etc/odoo/odoo.conf",
-      "--database=odoo",
-      "--init=base",
-      "--stop-after-init"
-    ]
-    restart: "no"
-    networks:
-      - odoo_network
-
-  odoo:
-    image: odoo:18.0
-    depends_on:
-      web:
-        condition: service_completed_successfully
-    ports:
-      - "9018:8069"
-      - "8072:8072"
-    volumes:
-      - odoo-web-data:/var/lib/odoo
-      - ./config:/etc/odoo
-      - ./addons:/mnt/extra-addons
-      - ./moxogo18:/mnt/extra-addons/moxogo18
       - ./logs:/var/log/odoo
       - ./backups:/mnt/backups
       - odoo-sessions:/mnt/.local
@@ -83,9 +42,22 @@ services:
       POSTGRES_PASSWORD: odoo123
       POSTGRES_DB: odoo
       ADMIN_PASSWORD: admin
-    command: ["--config=/etc/odoo/odoo.conf", "-i", "base"]
+    command: odoo --config=/etc/odoo/odoo.conf --database odoo --init base --load-language en_US --without-demo all
     user: odoo
     restart: unless-stopped
+    networks:
+      - odoo_network
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d:ro
+      - nginx_conf:/etc/nginx/conf.d
+    ports:
+      - "80:80"
+      - "443:443"
+    command: nginx -g 'daemon off;'
     networks:
       - odoo_network
 
