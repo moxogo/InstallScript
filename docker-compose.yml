@@ -54,7 +54,7 @@ services:
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./nginx/letsencrypt:/var/www/html/.well-known/acme-challenge:ro
+      - ./nginx/letsencrypt:/var/www/html:rw
       - nginx_conf:/etc/nginx/conf.d
     ports:
       - "80:80"
@@ -64,10 +64,11 @@ services:
       - odoo_network
 
   certbot:
-    image: certbot/certbot
+    image: certbot/certbot:latest
     volumes:
       - ./nginx/ssl:/etc/letsencrypt
-      - ./nginx/letsencrypt:/var/www/html/.well-known/acme-challenge
+      - ./nginx/letsencrypt:/var/www/html
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
     depends_on:
       - nginx
 

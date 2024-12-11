@@ -12,7 +12,7 @@ else
 fi
 
 # Verify required environment variables
-required_vars=("DOMAIN" "EMAIL" "ENABLE_SSL")
+required_vars=("DOMAIN" "EMAIL")
 for var in "${required_vars[@]}"; do
     if [ -z "${!var}" ]; then
         echo "Error: $var is not set in .env file"
@@ -34,27 +34,23 @@ error() {
     echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1${NC}"
 }
 
-# Function to check if domain is accessible
-check_domain() {
-    local domain=$1
-    if ! ping -c 1 $domain &> /dev/null; then
-        error "Domain $domain is not accessible. Please check your DNS settings."
-        return 1
-    fi
-    return 0
-}
-
-# Create required directories
+# Create required directories with proper permissions
 log "Creating required directories..."
 mkdir -p ./nginx/ssl
 mkdir -p ./nginx/letsencrypt
 chmod -R 755 ./nginx
 
-# Check domain before proceeding
-log "Checking domain accessibility..."
-if ! check_domain $DOMAIN; then
-    exit 1
-fi
+# Stop and remove existing containers
+log "Stopping existing containers..."
+docker-compose down
+
+# Start nginx container
+log "Starting nginx container..."
+docker-compose up -d nginx
+
+# Wait for nginx to start
+log "Waiting for nginx to initialize..."
+sleep 10
 
 # Request the certificate
 log "Requesting SSL certificate..."
@@ -69,33 +65,18 @@ docker-compose run --rm certbot certonly \
 
 # Copy SSL configuration
 log "Configuring nginx for SSL..."
-cp ./nginx/conf/ssl.conf.template ./nginx/conf/default.conf
-sed -i "s/\${DOMAIN}/$DOMAIN/g" ./nginx/conf/default.conf
-sed -i "s/\${ODOO_PORT}/8069/g" ./nginx/conf/default.conf
-sed -i "s/\${ODOO_CHAT_PORT}/8072/g" ./nginx/conf/default.conf
+envsubst '${DOMAIN} ${ODOO_PORT} ${ODOO_CHAT_PORT}' < ./nginx/conf/ssl.conf.template > ./nginx/conf/default.conf
 
-# Restart nginx to apply SSL
-log "Restarting nginx..."
-docker-compose restart nginx
+# Start all services
+log "Starting all services..."
+docker-compose up -d
 
-# Create SSL renewal script
-log "Creating SSL renewal script..."
-cat > renew-ssl.sh << EOF
-#!/bin/bash
-cd $(pwd)
-docker-compose run --rm certbot renew --quiet
-docker-compose restart nginx
-EOF
-
-chmod +x renew-ssl.sh
-
-# Add to crontab if not already present
-log "Setting up automatic renewal cron job..."
-(crontab -l 2>/dev/null | grep -v "renew-ssl.sh"; echo "0 12 * * * $(pwd)/renew-ssl.sh") | sort - | uniq - | crontab -
+# Wait for services to start
+log "Waiting for services to initialize..."
+sleep 15
 
 # Verify SSL certificate
 log "Verifying SSL certificate..."
-sleep 10
 if curl -k -s -I https://$DOMAIN 2>&1 | grep -q "200 OK"; then
     log "SSL certificate is working properly"
 else
@@ -105,4 +86,4 @@ fi
 
 log "SSL setup completed!"
 log "Your site should now be accessible via HTTPS"
-log "Certificate will automatically renew daily at 12:00"
+log "Certificate will automatically renew every 12 hours"
