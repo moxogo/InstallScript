@@ -122,153 +122,69 @@ This repository contains Docker configuration files and installation scripts for
 └── .env
 ```
 
-## Installation Steps
+## Installation Process
 
-### 1. Initial Server Setup
-
+### 1. Initial Setup
+1. Configure your `.env` file:
 ```bash
-# Connect to your server
-ssh user@your-server-ip
+# Basic Configuration
+POSTGRES_DB=odoo
+POSTGRES_USER=odoo
+POSTGRES_PASSWORD=your_secure_password
+DB_PORT=5432
 
-# Clone the repository or create directory structure
-mkdir -p /odoo
-cd /odoo
-```
+# Domain Configuration
+DOMAIN=your-domain.com
+EMAIL=your-email@example.com
+ENABLE_SSL=false  # Set to true only after initial setup
 
-```
-git clone https://github.com/moxogo/InstallScript.git
-```
-```
-sudo docker logs installscript-web-1
-sudo docker logs installscript-nginx-1
-```
+# Database Configuration
+POSTGRES_DB=odoo
+POSTGRES_USER=odoo
+POSTGRES_PASSWORD=your_secure_password
+DB_PORT=5432
 
-```
-# Rebuild the containers if needed
-docker-compose -f docker-compose.prod.yml build
+# Odoo Configuration
+ODOO_PORT=8069          # Main Odoo HTTP port
+ODOO_CHAT_PORT=8072     # Odoo live chat/longpolling port
 
-# Stop the containers
-sudo docker-compose -f docker-compose.prod.yml down
-
-# Start them again
-sudo docker-compose -f docker-compose.prod.yml up -d
-```
-```
-# Check Nginx configuration
-sudo docker exec installscript-nginx-1 nginx -t
-
-# Check if the configuration file is properly mounted
-sudo docker exec installscript-nginx-1 ls -l /etc/nginx/conf.d/
+# Web Server Configuration
+NGINX_PORT=80           # HTTP port
+NGINX_SSL_PORT=443      # HTTPS port
 ```
 
-```
-# Check Nginx logs
-sudo docker exec installscript-nginx-1 tail -f /var/log/nginx/access.log
-sudo docker exec installscript-nginx-1 tail -f /var/log/nginx/error.log
-```
-```
-# Add moxogo custom addons
-sudo mkdir -p /odoo/moxogo18
-sudo chown -R $USER:$USER /odoo/moxogo18
-
-# Check if Odoo can see the custom addons
-sudo docker logs installscript-web-1 | grep "moxogo"
-``````
-
-### 2. Run Installation Script
-
+2. Run the installation script:
 ```bash
-# Make script executable
 chmod +x install_production.sh
-
-# Before running the script, stop and disable system Nginx if it exists
-sudo systemctl stop nginx
-sudo systemctl disable nginx
-sudo apt-get remove nginx nginx-common -y  # Optional: only if you want to completely remove system Nginx
-
-# Run installation script
 ./install_production.sh
 ```
 
+3. Verify the installation:
+- Access Odoo at `http://localhost:8069`
+- Check if all services are running: `docker-compose ps`
+
+### 2. SSL Setup (Optional)
+After confirming that the initial setup works:
+
+1. Update `.env` file:
+```bash
+ENABLE_SSL=true
+```
+
+2. Run the SSL setup script:
+```bash
+chmod +x ssl-setup.sh
+./ssl-setup.sh
+```
+
 The script will:
-- Stop and disable system Nginx if it exists
-- Update system packages
-- Install Docker and Docker Compose
-- Create necessary directories
-- Generate secure passwords
-- Set up initial configuration
+- Install SSL certificates
+- Configure Nginx with HTTPS
+- Set up automatic renewal
 
-### 3. Configure Environment
-
-Edit the `.env` file with your settings:
-```bash
-nano .env
-```
-
-Update the following variables:
-```env
-POSTGRES_PASSWORD=your_generated_postgres_password
-ADMIN_PASSWORD=your_generated_admin_password
-DOMAIN=your-domain.com
-EMAIL=your-email@domain.com
-```
-
-### 4. Custom Python Dependencies
-
-If your modules require additional Python packages:
-
-1. Edit `requirements.custom.txt`:
-```bash
-nano requirements.custom.txt
-```
-
-2. Add your dependencies:
-```txt
-# Example:
-pandas==2.0.0
-numpy==1.24.0
-requests==2.31.0
-```
-
-3. Rebuild the Docker image:
-```bash
-docker-compose -f docker-compose.prod.yml build
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-### 5. Custom Addons Configuration
-
-1. Place your custom addons in `/odoo/moxogo18/`
-2. The `addons_path` in `odoo.conf` is configured to include:
-   - `/mnt/extra-addons`
-   - `/mnt/custom-addons`
-   - `/usr/lib/python3/dist-packages/odoo/addons`
-
-3. Verify addons recognition:
-```bash
-docker logs installscript-web-1 | grep "addons paths"
-```
-
-### 6. WebSocket Configuration
-
-The setup includes WebSocket support for real-time features:
-
-1. Odoo Configuration (`config/odoo.conf`):
-```ini
-# WebSocket configuration
-longpolling_port = 8072
-websocket = True
-```
-
-2. Nginx Configuration includes WebSocket proxying:
-```nginx
-# WebSocket support
-location /websocket {
-    proxy_pass http://odoochat;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection $connection_upgrade;
-}
-```
+3. Verify SSL setup:
+- Access Odoo at `https://your-domain.com`
+- Check certificate status: `docker-compose exec nginx openssl x509 -in /etc/letsencrypt/live/$DOMAIN/cert.pem -text -noout`
 
 ## Configuration
 
@@ -381,26 +297,128 @@ curl -vI https://$DOMAIN
 
 ### Troubleshooting
 
-1. If certificate renewal fails:
-   - Check domain DNS settings
-   - Verify ports 80 and 443 are open
-   - Check nginx logs: `docker-compose logs nginx`
-   - Check certbot logs: `docker-compose logs certbot`
+1. **Cannot connect to Odoo**
+   - Check if containers are running: `docker ps`
+   - Check Nginx logs: `tail -f /var/log/nginx/error.log`
+   - Verify SSL certificate: `certbot certificates`
 
-2. If nginx fails to start:
-   - Check SSL certificate paths
-   - Verify nginx configuration
-   - Check error logs: `docker-compose logs nginx`
+2. **Database connection issues**
+   - Check PostgreSQL logs: `docker-compose -f docker-compose.prod.yml logs db`
+   - Verify environment variables in `.env`
 
-3. If cron jobs aren't running:
-   - Check cron service: `systemctl status cron`
-   - Verify cron job: `crontab -l`
-   - Check root's mail for cron output: `mail`
+3. **Permission issues**
+   - Run: `sudo chown -R $USER:$USER /odoo`
+   - Check log file permissions: `ls -la /odoo/logs`
 
-## Security Setup
+4. **WebSocket connection errors**
+   - Check if port 8072 is accessible
+   - Verify Nginx WebSocket configuration
+   - Check Odoo logs for WebSocket-related errors:
+     ```bash
+     docker logs installscript-web-1 | grep -i "websocket"
+     ```
+   - Ensure proxy_mode and websocket are enabled in odoo.conf
 
-### Firewall Configuration
+5. **Custom addons not recognized**
+   - Verify the addons path in odoo.conf
+   - Check permissions of the custom addons directory
+   - Update the apps list in Odoo interface
+   - Check Odoo logs for addon loading errors
 
+6. **Python dependency issues**
+   - Check if requirements.custom.txt is properly formatted
+   - Verify the Docker build logs for installation errors
+   - Try installing dependencies manually in the container:
+     ```bash
+     docker exec -it installscript-web-1 pip3 install package_name
+     ```
+
+7. **Nginx port conflicts**
+   - Check if system Nginx is running: `sudo systemctl status nginx`
+   - Stop and disable system Nginx: `sudo systemctl stop nginx` and `sudo systemctl disable nginx`
+   - Check what's using port 80: `sudo lsof -i :80`
+   - Remove system Nginx (optional): `sudo apt-get remove nginx nginx-common -y` and `sudo apt-get autoremove -y`
+   - Clean up Nginx directories: `sudo rm -rf /etc/nginx` and `sudo rm -rf /var/log/nginx`
+
+## Support
+
+For issues and support:
+1. Check the logs
+2. Review configuration files
+3. Consult Odoo documentation
+4. Check Docker documentation
+
+## License
+
+This installation guide and associated scripts are provided under [Your License].
+
+## Remove old installations
+If you have multiple versions of Odoo installed, you can remove the old ones by running the following commands:
+```bash
+sudo apt purge odoo
+sudo apt autoremove
+sudo userdel -r odoo
+sudo rm -rf /odoo
+sudo rm -f /usr/bin/node /usr/local/bin/node
+sudo rm -rf /odoo18/mxg-venv
+sudo apt-get remove -y nodejs npm
+sudo apt-get autoremove -y
+```
+```bash
+source /odoo18/mxg-venv/bin/activate
+cd /odoo18/odoo18-server
+pip3 install -r requirements.txt
+pip3 install babel psycopg2-binary werkzeug lxml python-dateutil pytz pillow gevent greenlet
+
+```
+```bash
+# Connect to your server
+ssh user@your-server-ip
+
+# Clone the repository or create directory structure
+mkdir -p /odoo
+cd /odoo
+```
+
+```
+git clone https://github.com/moxogo/InstallScript.git
+```
+```
+sudo docker logs installscript-web-1
+sudo docker logs installscript-nginx-1
+```
+
+```
+# Rebuild the containers if needed
+docker-compose -f docker-compose.prod.yml build
+
+# Stop the containers
+sudo docker-compose -f docker-compose.prod.yml down
+
+# Start them again
+sudo docker-compose -f docker-compose.prod.yml up -d
+```
+```
+# Check Nginx configuration
+sudo docker exec installscript-nginx-1 nginx -t
+
+# Check if the configuration file is properly mounted
+sudo docker exec installscript-nginx-1 ls -l /etc/nginx/conf.d/
+```
+
+```
+# Check Nginx logs
+sudo docker exec installscript-nginx-1 tail -f /var/log/nginx/access.log
+sudo docker exec installscript-nginx-1 tail -f /var/log/nginx/error.log
+```
+```
+# Add moxogo custom addons
+sudo mkdir -p /odoo/moxogo18
+sudo chown -R $USER:$USER /odoo/moxogo18
+
+# Check if Odoo can see the custom addons
+sudo docker logs installscript-web-1 | grep "moxogo"
+```
 ```bash
 # Install and configure UFW
 sudo apt-get install -y ufw
@@ -574,3 +592,79 @@ source /odoo18/mxg-venv/bin/activate
 cd /odoo18/odoo18-server
 pip3 install -r requirements.txt
 pip3 install babel psycopg2-binary werkzeug lxml python-dateutil pytz pillow gevent greenlet
+
+```
+```bash
+# Connect to your server
+ssh user@your-server-ip
+
+# Clone the repository or create directory structure
+mkdir -p /odoo
+cd /odoo
+```
+
+```
+git clone https://github.com/moxogo/InstallScript.git
+```
+```
+sudo docker logs installscript-web-1
+sudo docker logs installscript-nginx-1
+```
+
+```
+# Rebuild the containers if needed
+docker-compose -f docker-compose.prod.yml build
+
+# Stop the containers
+sudo docker-compose -f docker-compose.prod.yml down
+
+# Start them again
+sudo docker-compose -f docker-compose.prod.yml up -d
+```
+```
+# Check Nginx configuration
+sudo docker exec installscript-nginx-1 nginx -t
+
+# Check if the configuration file is properly mounted
+sudo docker exec installscript-nginx-1 ls -l /etc/nginx/conf.d/
+```
+
+```
+# Check Nginx logs
+sudo docker exec installscript-nginx-1 tail -f /var/log/nginx/access.log
+sudo docker exec installscript-nginx-1 tail -f /var/log/nginx/error.log
+```
+```
+# Add moxogo custom addons
+sudo mkdir -p /odoo/moxogo18
+sudo chown -R $USER:$USER /odoo/moxogo18
+
+# Check if Odoo can see the custom addons
+sudo docker logs installscript-web-1 | grep "moxogo"
+```
+```bash
+# Install and configure UFW
+sudo apt-get install -y ufw
+sudo ufw allow 22
+sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw enable
+
+# Install fail2ban
+sudo apt-get install -y fail2ban
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+
+```
+
+## Port Configuration
+
+The following ports are configurable through environment variables:
+
+- `ODOO_PORT`: Main Odoo HTTP port (default: 8069)
+- `ODOO_CHAT_PORT`: Odoo live chat/longpolling port (default: 8072)
+- `NGINX_PORT`: HTTP port (default: 80)
+- `NGINX_SSL_PORT`: HTTPS port (default: 443)
+- `DB_PORT`: PostgreSQL port (default: 5432)
+
+These ports can be modified in the `.env` file to avoid conflicts with other services.

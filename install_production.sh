@@ -235,3 +235,60 @@ docker ps
 echo ""
 echo "Your Odoo server is now available at:"
 echo "http://$(wget -qO- ipv4.icanhazip.com):8069"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+# Log function
+log() {
+    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
+}
+
+error() {
+    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1${NC}"
+}
+
+# Load environment variables
+if [ -f .env ]; then
+    export $(cat .env | grep -v '#' | sed 's/\r$//' | awk '/=/ {print $1}' )
+else
+    error "Error: .env file not found"
+    exit 1
+fi
+
+# Create necessary directories
+log "Creating directories..."
+mkdir -p ./nginx/ssl
+mkdir -p ./nginx/letsencrypt
+mkdir -p ./nginx/conf
+mkdir -p ./config
+mkdir -p ./addons
+
+# Copy configuration files
+log "Copying configuration files..."
+cp -n config/odoo.conf.template config/odoo.conf 2>/dev/null || true
+
+# Initial docker setup
+log "Starting initial docker setup..."
+docker-compose down -v
+docker-compose build
+docker-compose up -d
+
+# Wait for services to be healthy
+log "Waiting for services to be healthy..."
+sleep 30
+
+# Check if services are running
+if ! docker-compose ps | grep -q "Up"; then
+    error "Docker services failed to start properly"
+    docker-compose logs
+    exit 1
+fi
+
+log "Initial installation completed successfully!"
+log "You can now run './ssl-setup.sh' to configure SSL"
+log "Services are accessible at:"
+log "- Odoo: http://localhost:8069"
+log "- Chat: http://localhost:8072"
