@@ -12,3 +12,6 @@ pysftp
 botocore
 boto3
 paramiko
+pydrive2
+openpyxl
+sortedcontainers

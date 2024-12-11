@@ -34,7 +34,7 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile
-    image: odoo:18.0
+    image: odoo:17.0
     depends_on:
       - db
     ports:
@@ -42,11 +42,11 @@ services:
       - "${ODOO_CHAT_PORT:-8072}:8072"
     volumes:
       - odoo-web-data:/odoo-server
-      - ./config:/etc/odoo
+      - ./config:/etc/odoo:ro
       - ./logs:/var/log/odoo
-      - ./addons:/mnt/extra-addons
+      - ./addons:/mnt/extra-addons:ro
       - ./backups:/mnt/backups
-      - ./moxogo18:/mnt/moxogo18
+      - ./moxogo18:/mnt/moxogo18:ro
       - odoo-sessions:/mnt/.local
     environment:
       - DB_HOST=db

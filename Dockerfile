@@ -14,8 +14,10 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Create directory and set permissions
-RUN mkdir -p /mnt/.local && chown -R odoo:odoo /mnt/.local && chmod 700 /mnt/.local
+# Create directories and set permissions
+RUN mkdir -p /mnt/.local/sessions && \
+    chown -R odoo:odoo /mnt/.local && \
+    chmod -R 700 /mnt/.local
 
 # Install Python dependencies
 COPY requirements.custom.txt /tmp/requirements.custom.txt
