@@ -76,7 +76,7 @@ services:
       - certbot-webroot:/var/www/html
     depends_on:
       - nginx
-    command: certonly --webroot --webroot-path=/var/www/html --email admin@mxgsoft.com --agree-tos --no-eff-email -d mxg18.mxgsoft.com
+    command: certonly --webroot --webroot-path=/var/www/html --email wizearch55@gmail.com --agree-tos --no-eff-email -d mxg18.mxgsoft.com
 
 volumes:
   odoo-web-data:
