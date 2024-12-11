@@ -75,9 +75,9 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
     environment:
-      - POSTGRES_DB=${DB_NAME:-odoo}
+      - POSTGRES_DB=${POSTGRES_DB:-odoo}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-odoo}
-      - POSTGRES_USER=${DB_USER:-odoo}
+      - POSTGRES_USER=${POSTGRES_USER:-odoo}
       - PGDATA=/var/lib/postgresql/data/pgdata
       - POSTGRES_HOST_AUTH_METHOD=md5
     volumes:

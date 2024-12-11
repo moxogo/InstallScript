@@ -232,10 +232,6 @@ docker-compose -f docker-compose.yml up -d
 echo "Checking container status..."
 docker ps
 
-echo ""
-echo "Your Odoo server is now available at:"
-echo "http://$(wget -qO- ipv4.icanhazip.com):8069"
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -290,5 +286,8 @@ fi
 log "Initial installation completed successfully!"
 log "You can now run './ssl-setup.sh' to configure SSL"
 log "Services are accessible at:"
-log "- Odoo: http://localhost:8069"
-log "- Chat: http://localhost:8072"
+log "- Odoo: http://localhost:$ODOO_PORT"
+log "- Chat: http://localhost:$ODOO_CHAT_PORT"
+echo ""
+echo "Your Odoo server is now available at:"
+echo "http://$(wget -qO- ipv4.icanhazip.com):$ODOO_PORT"
