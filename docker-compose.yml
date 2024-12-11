@@ -53,6 +53,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/letsencrypt:/var/www/html/.well-known/acme-challenge:ro
       - nginx_conf:/etc/nginx/conf.d
     ports:
       - "80:80"
@@ -60,6 +62,14 @@ services:
     command: nginx -g 'daemon off;'
     networks:
       - odoo_network
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./nginx/ssl:/etc/letsencrypt
+      - ./nginx/letsencrypt:/var/www/html/.well-known/acme-challenge
+    depends_on:
+      - nginx
 
 volumes:
   odoo-web-data:
