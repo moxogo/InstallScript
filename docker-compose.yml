@@ -54,10 +54,10 @@ services:
       - ./backups:/mnt/backups
       - odoo-sessions:/mnt/.local
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-odoo}
-      - POSTGRES_USER=${POSTGRES_USER:-odoo}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-odoo}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - POSTGRES_DB=odoo
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=odoo
+      - ADMIN_PASSWORD=admin
       - ODOO_PORT=${ODOO_PORT:-8069}
       - ODOO_CHAT_PORT=${ODOO_CHAT_PORT:-8072}
     command: ["--config=/etc/odoo/odoo.conf"]
@@ -71,9 +71,9 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-odoo}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-odoo}
-      - POSTGRES_USER=${POSTGRES_USER:-odoo}
+      - POSTGRES_DB=odoo
+      - POSTGRES_PASSWORD=odoo
+      - POSTGRES_USER=odoo
       - PGDATA=/var/lib/postgresql/data/pgdata
       - POSTGRES_HOST_AUTH_METHOD=md5
     volumes:
@@ -84,7 +84,7 @@ services:
     networks:
       - odoo_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-odoo}"]
+      test: ["CMD-SHELL", "pg_isready -U odoo"]
       interval: 10s
       timeout: 5s
       retries: 5
