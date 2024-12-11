@@ -55,7 +55,7 @@ services:
       - ./nginx/conf:/etc/nginx/conf.d:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./nginx/letsencrypt:/var/www/html:rw
-      - nginx_conf:/etc/nginx/conf.d
+      - ./nginx/conf/default.conf:/etc/nginx/conf.d/default.conf:rw
     ports:
       - "80:80"
       - "443:443"
@@ -66,9 +66,8 @@ services:
   certbot:
     image: certbot/certbot:latest
     volumes:
-      - ./nginx/ssl:/etc/letsencrypt
-      - ./nginx/letsencrypt:/var/www/html
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+      - ./nginx/ssl:/etc/letsencrypt:rw
+      - ./nginx/letsencrypt:/var/www/html:rw
     depends_on:
       - nginx
 
