@@ -1,16 +1,15 @@
 upstream odoo {
-    server web:${ODOO_PORT};
+    server web:8069;
 }
 
 upstream odoochat {
-    server web:${ODOO_CHAT_PORT};
+    server web:8072;
 }
 
 # HTTP Server (Port 80)
 server {
     listen 80;
     server_name ${DOMAIN};
-    root /var/www/html;
     
     # IMPORTANT: This location must come first!
     location ^~ /.well-known/acme-challenge/ {
@@ -25,7 +24,7 @@ server {
     }
 }
 
-# HTTPS server
+# HTTPS Server
 server {
     listen 443 ssl;
     server_name ${DOMAIN};
@@ -33,39 +32,51 @@ server {
     ssl_certificate /etc/nginx/ssl/live/${DOMAIN}/fullchain.pem;
     ssl_certificate_key /etc/nginx/ssl/live/${DOMAIN}/privkey.pem;
 
+    # SSL parameters
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+    ssl_prefer_server_ciphers off;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_session_tickets off;
+
     # Proxy settings
     proxy_read_timeout 720s;
     proxy_connect_timeout 720s;
     proxy_send_timeout 720s;
-    proxy_set_header X-Forwarded-Host $host;
+
+    # Proxy headers
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Real-IP $remote_addr;
 
-    # Redirect longpoll requests to odoo longpolling port
+    # Handle longpolling
     location /longpolling {
         proxy_pass http://odoochat;
     }
 
-    # Redirect requests to odoo backend server
+    # Handle /web/static/ files
+    location ~* /web/static/ {
+        proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
+        proxy_buffering on;
+        proxy_cache_valid 200 60m;
+        proxy_pass http://odoo;
+        expires 864000;
+    }
+
+    # Handle main Odoo requests
     location / {
         proxy_pass http://odoo;
         proxy_next_upstream error timeout invalid_header http_500 http_502 http_503;
         proxy_redirect off;
     }
 
-    # Cache static files
-    location ~* /web/static/ {
-        proxy_pass http://odoo;
-        proxy_cache_valid 200 90m;
-        proxy_buffering on;
-        expires 864000;
-    }
-
-    # Common gzip
+    # Gzip compression
     gzip on;
     gzip_types text/css text/scss text/plain text/xml application/xml application/json application/javascript;
     gzip_min_length 1000;
     gzip_comp_level 6;
     gzip_vary on;
+    gzip_proxied any;
 }
