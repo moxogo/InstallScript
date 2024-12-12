@@ -1,0 +1,234 @@
+[options]
+admin_passwd = ${ADMIN_PASSWORD}
+
+# Database settings
+db_host = db
+db_port = 5432
+db_user = ${POSTGRES_USER}
+db_password = ${POSTGRES_PASSWORD}
+db_sslmode = disable
+db_maxconn = 64
+db_encoding = UTF8
+dbname = 
+dbfilter = .*
+http_port = ${ODOO_PORT}
+longpolling_port = ${ODOO_CHAT_PORT}
+proxy_mode = True
+xmlrpc_port = ${ODOO_PORT}
+
+# Addons
+addons_path = /mnt/extra-addons,/mnt/extra-addons/moxogo18,/usr/lib/python3/dist-packages/odoo/addons
+
+# Logging
+logfile = /var/log/odoo/odoo.log
+logrotate = True
+log_level = info
+
+# Data directory
+data_dir = /mnt/.local/
+
+# Performance tuning
+workers = 0
+max_cron_threads = 1
+limit_memory_hard = 2684354560
+limit_memory_soft = 2147483648
+limit_request = 8192
+limit_time_cpu = 600
+limit_time_real = 1200
+
+# Security
+list_db = True
+secure_cert_file = False
+server_wide_modules = base,web
+
+# Optimization
+transient_age_limit = 1.0
+osv_memory_count_limit = False
+
+# Database
+unaccent = True
+dev_mode = reload
+
+# General Configuration
+[options]
+; This is the configuration file for the Odoo web server.
+
+# Database and Service Configuration
+db_host = False
+db_port = False
+db_user = odoo
+db_password = your_complex_password
+
+# Server Configuration
+; Specify the path to the Odoo server database directory
+addons_path = /path/to/your/addons
+
+; Specify the path to the Odoo server configuration file
+config_file = /path/to/odoo.conf
+
+# Web Server Configuration
+; The hostname on which the Odoo web server will bind.
+; If set to False, the server will listen on all interfaces.
+; In production, it's recommended to set this to your server's IP address.
+# xmlrpc_interface = 127.0.0.1
+
+; The port number on which the Odoo web server will listen.
+xmlrpc_port = 8069
+
+; The port number on which the Odoo JSON-RPC server will listen.
+xmlrpcs_port = 8072
+
+# Security Configuration
+; Enable the request handler for JSON-RPC over HTTPS (Secure).
+; This requires a valid SSL certificate and key.
+xmlrpcs = True
+
+; Path to the SSL certificate file.
+ssl_cert_file = /path/to/your/certificate.crt
+
+; Path to the SSL private key file.
+ssl_key_file = /path/to/your/private.key
+
+; Enable password encryption for database users.
+dbfilter = ^%d$
+
+; Disable the HTTP server for public access.
+; Use reverse proxy like Nginx or Apache for public access.
+http_enable = False
+
+# Performance and Optimization
+; Set the number of workers. Recommended: 2 * CPU cores + 1
+workers = 5
+
+; Set the number of threads per worker. Recommended: 1
+threads = 1
+
+; Enable preloading of addons.
+preload = all
+
+; Enable memory profiling.
+; Use with caution as it can have a performance impact.
+; limit_memory_hard = 67108864 ; 64 MB
+; limit_memory_soft = 33554432 ; 32 MB
+
+; Enable logging of SQL queries.
+; Use with caution as it can have a performance impact.
+; log_level = debug_sql
+
+# Log Configuration
+; Directory where logs will be written.
+logfile = /var/log/odoo/odoo.log
+
+; Log level (info, debug, debug_sql, etc.).
+log_level = info
+
+# Static Files and Caching
+; Enable cache for static files.
+dev_mode = False
+
+# Email Configuration
+; SMTP server configuration for sending emails.
+; smtp_server = smtp.yourserver.com
+; smtp_port = 587
+; smtp_user = user@yourserver.com
+; smtp_password = your_password
+; smtp_encryption = starttls
+
+# Other Configurations
+; Enable the web server for long polling.
+longpolling_port = 8072
+
+; Specify the URL of the long polling service.
+longpolling_kw = /longpolling_poll
+
+; Enable the web server for WebSocket communication.
+websocket_port = 8073
+
+; Enable the web server for WebSocket communication.
+websocket_timeout = 3600
+
+# Maintenance
+; Enable the cron service.
+; This is necessary for scheduled tasks.
+cron = True
+
+# Database Management
+; Enable database auto-vacuuming.
+db_auto_rebuild = True
+
+# Performance Monitoring
+; Enable the performance logging.
+; This can help in identifying performance bottlenecks.
+; log_request = True
+; log_response = True
+
+# Developer Tools
+; Disable developer mode in production.
+; dev_mode = all
+
+# Proxy Configuration
+; If you are behind a proxy, configure the trusted proxies.
+; trusted_proxies = 127.0.0.1, 192.168.1.1
+
+# Session Management
+; Set the session timeout in seconds.
+session_lifetime = 604800 ; 7 days
+
+# Web Interface Configuration
+; Enable the web interface.
+web = True
+
+# Static File Caching
+; Enable caching of static files in the browser.
+cache = True
+
+# Email Queue
+; Enable the email queue.
+email_queue = True
+
+# Load Balancing
+; If you are using load balancing, configure the load balancer settings.
+; auto_reload = True
+; auto_reload_watchdog = True
+
+# Security Groups
+; Define security groups to manage access.
+; admin_passwd = your_admin_password
+
+# Custom Addons Path
+; Add custom addons paths if necessary.
+; addons_path = /path/to/your/addons,/path/to/custom/addons
+
+# Backup Configuration
+; Schedule regular backups.
+; backup_format = zip
+; backup_keep = 7
+; backup_dir = /path/to/backup/directory
+
+# Load Configuration
+; Load additional configuration files if necessary.
+# load = /path/to/additional/config.conf
+
+# Custom Modules
+; Load custom modules on startup.
+; load_module = module1,module2
+
+# Event Tracking
+; Enable event tracking for auditing purposes.
+track_events = True
+
+# Authentication
+; Configure authentication methods.
+; auth_method = saml, ldap
+
+# Session Management
+; Enable session management features.
+; session_type = standard
+
+# WebSockets
+; Enable WebSockets for real-time updates.
+; websocket_port = 8073
+
+# URL Prefix
+; Add a URL prefix if necessary.
+; url_prefix = /odoo

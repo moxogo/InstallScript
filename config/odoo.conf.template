@@ -1,50 +1,74 @@
 [options]
-admin_passwd = ${ADMIN_PASSWORD}
+# Database Configuration
+db_host = ${DB_HOST:-db}
+db_port = ${DB_PORT:-5432}
+db_user = ${DB_USER:-odoo}
+db_password = ${DB_PASSWORD:-odoo123}
+db_name = ${DB_NAME:-False}
 
-# Database settings
-db_host = db
-db_port = 5432
-db_user = ${POSTGRES_USER}
-db_password = ${POSTGRES_PASSWORD}
-db_sslmode = disable
-db_maxconn = 64
-db_encoding = UTF8
-dbname = 
-dbfilter = .*
-http_port = ${ODOO_PORT}
-longpolling_port = ${ODOO_CHAT_PORT}
+# Server Configuration
+admin_passwd = ${ADMIN_PASSWORD:-admin}
+addons_path = /mnt/extra-addons,/mnt/extra-addons/moxogo18
+data_dir = /var/lib/odoo
+
+# Web Server Configuration
+http_enable = True
+http_interface = 0.0.0.0
+xmlrpc_port = ${ODOO_PORT:-8069}
+longpolling_port = ${ODOO_CHAT_PORT:-8072}
 proxy_mode = True
-xmlrpc_port = ${ODOO_PORT}
 
-# Addons
-addons_path = /mnt/extra-addons,/mnt/extra-addons/moxogo18,/usr/lib/python3/dist-packages/odoo/addons
-
-# Logging
-logfile = /var/log/odoo/odoo.log
-logrotate = True
-log_level = info
-
-# Data directory
-data_dir = /mnt/.local/
-
-# Performance tuning
-workers = 0
-max_cron_threads = 1
-limit_memory_hard = 2684354560
-limit_memory_soft = 2147483648
-limit_request = 8192
+# Process Management
+workers = ${WORKERS:-4}
+max_cron_threads = 2
 limit_time_cpu = 600
 limit_time_real = 1200
+limit_memory_hard = 2684354560
+limit_memory_soft = 2147483648
 
-# Security
-list_db = True
-secure_cert_file = False
-server_wide_modules = base,web
+# Logging Configuration
+logfile = /var/log/odoo/odoo.log
+log_level = warn
+log_handler = :INFO
+syslog = False
 
-# Optimization
-transient_age_limit = 1.0
-osv_memory_count_limit = False
-
-# Database
+# Performance Optimization
+db_maxconn = 64
+db_template = template0
 unaccent = True
-dev_mode = reload
+list_db = False
+
+# Security Settings
+dbfilter = ${DBFILTER:-.*}
+without_demo = all
+server_wide_modules = web,base
+
+# Cache Configuration
+cache_timeout = 31536000
+cache_system = memory
+
+# Email Configuration
+email_from = ${EMAIL_FROM:-false}
+smtp_server = ${SMTP_SERVER:-false}
+smtp_port = ${SMTP_PORT:-587}
+smtp_user = ${SMTP_USER:-false}
+smtp_password = ${SMTP_PASSWORD:-false}
+smtp_ssl = ${SMTP_SSL:-false}
+
+# Development Settings (disabled in production)
+dev_mode = False
+test_enable = False
+test_file = False
+test_tags = False
+
+# Session Management
+session_duration = 8
+session_type = redis
+
+# Geolocation
+geoip_database = /usr/share/GeoIP/GeoLite2-City.mmdb
+
+# Miscellaneous
+osv_memory_age_limit = 1.0
+osv_memory_count_limit = False
+translate_modules = ['all']

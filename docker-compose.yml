@@ -1,8 +1,8 @@
 services:
   db:
-    build:
+    build: 
       context: ./postgres
-      dockerfile: Dockerfile
+    image: postgres:16
     environment:
       POSTGRES_USER: odoo
       POSTGRES_PASSWORD: odoo123
