@@ -47,14 +47,21 @@ services:
       DB_USER: odoo
       DB_PASSWORD: odoo123
     command: >
-      bash -c "
+      bash -c '
+        echo "Waiting for PostgreSQL..."
         while ! nc -z db 5432; do
-          echo 'Waiting for database to be ready...'
-          sleep 2
-        done &&
-        odoo --config=/etc/odoo/odoo.conf --init base --load-language en_US --stop-after-init &&
-        odoo --config=/etc/odoo/odoo.conf
-      "
+          sleep 1
+        done
+        echo "PostgreSQL started"
+        
+        if ! psql -h db -U odoo -d odoo -c "SELECT COUNT(*) FROM ir_module_module" > /dev/null 2>&1; then
+          echo "Initializing database..."
+          odoo --config=/etc/odoo/odoo.conf --init base --load-language en_US --stop-after-init || exit 1
+        fi
+        
+        echo "Starting Odoo server..."
+        exec odoo --config=/etc/odoo/odoo.conf
+      '
     user: odoo
     restart: unless-stopped
     networks:
