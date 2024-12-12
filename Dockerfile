@@ -25,6 +25,7 @@ RUN mkdir -p /mnt/.local/sessions && \
 # Install Python dependencies
 COPY requirements.custom.txt /tmp/requirements.custom.txt
 RUN pip3 install --break-system-packages --no-cache-dir -r /tmp/requirements.custom.txt && \
+    pip3 install --break-system-packages --no-cache-dir psycopg2-binary && \
     rm /tmp/requirements.custom.txt
 
 USER odoo

@@ -54,10 +54,31 @@ services:
         done
         echo "PostgreSQL started"
         
-        if ! psql -h db -U odoo -d odoo -c "SELECT COUNT(*) FROM ir_module_module" > /dev/null 2>&1; then
-          echo "Initializing database..."
-          odoo --config=/etc/odoo/odoo.conf --init base --load-language en_US --stop-after-init || exit 1
-        fi
+        echo "Checking database initialization..."
+        python3 - <<EOF
+        import psycopg2
+        import time
+        
+        def wait_for_db():
+            while True:
+                try:
+                    conn = psycopg2.connect(
+                        dbname="odoo",
+                        user="odoo",
+                        password="odoo123",
+                        host="db"
+                    )
+                    conn.close()
+                    return
+                except psycopg2.OperationalError:
+                    print("Waiting for database to be ready...")
+                    time.sleep(1)
+        
+        wait_for_db()
+        EOF
+        
+        echo "Initializing Odoo database..."
+        odoo --config=/etc/odoo/odoo.conf --init base --load-language en_US --stop-after-init || true
         
         echo "Starting Odoo server..."
         exec odoo --config=/etc/odoo/odoo.conf
