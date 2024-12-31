@@ -91,13 +91,58 @@ read
 
 # Create a configuration file
 sudo cp $INSTALL_DIR/debian/odoo.conf /etc/odoo18.conf
-sudo sed -i "s|addons_path = .*|addons_path = $INSTALL_DIR/addons|" /etc/odoo18.conf
-sudo sed -i "s|data_dir = .*|data_dir = $INSTALL_DIR/data|" /etc/odoo18.conf
-sudo sed -i "s|# admin_passwd = admin|admin_passwd = $ADMIN_PASSWORD|" /etc/odoo18.conf
-sudo sed -i 's|db_user = odoo|db_user = odoo18|' /etc/odoo18.conf
-sudo sed -i "s|# db_password = False|db_password = $DB_PASSWORD|" /etc/odoo18.conf
-sudo sed -i 's|# addons_path = /usr/lib/odoo/addons,/var/lib/odoo/addons|addons_path = /odoo18/addons,/odoo18/moxogo18|' /etc/odoo18.conf
-sudo sed -i 's|# logfile = /var/log/odoo/odoo.log|logfile = /var/log/odoo/odoo18.log|' /etc/odoo18.conf
+cat <<EOF | sudo tee /etc/odoo18.conf
+[options]
+admin_passwd = $ADMIN_PASSWORD
+master_passwd = $ADMIN_PASSWORD
+db_host = db
+db_port = 5432
+db_user = $POSTGRES_USER
+db_password = $DB_PASSWORD
+db_name = $POSTGRES_DB
+addons_path = $INSTALL_DIR/addons,$INSTALL_DIR/moxogo18
+data_dir = $INSTALL_DIR/data
+http_port = $ODOO_PORT
+longpolling_port = 8072
+proxy_mode = True
+workers = 4
+max_cron_threads = 2
+limit_time_cpu = 1200
+limit_time_real = 2400
+log_level = info
+log_handler = [':INFO']
+logfile = $LOG_FILE
+logrotate = True
+db_sslmode = disable
+db_maxconn = 128
+db_encoding = UTF8
+dbfilter = .*
+limit_memory_hard = 2684354560
+limit_memory_soft = 2147483648
+limit_request = 8192
+list_db = True
+secure_cert_file = False
+server_wide_modules = base,web
+websocket = True
+transient_age_limit = 1.0
+osv_memory_count_limit = False
+db_template = template0
+unaccent = True
+url_prefix = /mxg
+
+# Performance settings
+http_enable = True
+http_interface =
+gevent_port = 8072
+xmlrpc = True
+xmlrpc_interface =
+db_prefetch = True
+osv_memory_age_limit = 1.0
+load_language = en_US
+without_demo = True
+log_db = False
+log_db_level = warning
+EOF
 
 # Set permissions for the configuration file
 sudo chown odoo18: /etc/odoo18.conf
@@ -119,7 +164,7 @@ Documentation=https://moxogo.com
 [Service]
 Type=simple
 User=$SYSTEM_USER
-ExecStart=$INSTALL_DIR/venv/bin/python3 $INSTALL_DIR/odoo-bin -c /etc/odoo18.conf
+ExecStart=$INSTALL_DIR/venv/bin/python $INSTALL_DIR/odoo-bin -c /etc/odoo18.conf
 [Install]
 WantedBy=default.target
 EOF
@@ -161,7 +206,7 @@ server {
 
     # Static files
     location /web/static/ {
-        alias /var/lib/odoo/.local/share/Odoo/filestore/;
+        alias $INSTALL_DIR/.local/share/Odoo/filestore/;
     }
 }
 
@@ -183,7 +228,7 @@ server {
 
     # Static files
     location /web/static/ {
-        alias /var/lib/odoo/.local/share/Odoo/filestore/;
+        alias $INSTALL_DIR/.local/share/Odoo/filestore/;
     }
 }
 EOF
