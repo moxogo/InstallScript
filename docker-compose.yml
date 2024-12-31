@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16
+    container_name: postgres
     environment:
       POSTGRES_USER: odoo
       POSTGRES_PASSWORD: odoo123
@@ -23,6 +24,7 @@ services:
       context: .
       dockerfile: Dockerfile
     image: odoo:18.0
+    container_name: odoo18
     depends_on:
       db:
         condition: service_healthy
@@ -124,6 +126,7 @@ EOF
 
   certbot:
     image: certbot/certbot:latest
+    container_name: certbot
     volumes:
       - ./nginx/ssl:/etc/letsencrypt:rw
       - ./nginx/letsencrypt:/var/www/html:rw
