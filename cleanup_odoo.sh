@@ -13,6 +13,10 @@ VENV_DIR="/odoo18/venv"
 LOG_DIR="/var/log/odoo"
 CONFIG_FILE="/etc/odoo.conf"
 SERVICE_FILE="/etc/systemd/system/odoo.service"
+NGINX_AVAILABLE="/etc/nginx/sites-available/odoo"
+NGINX_ENABLED="/etc/nginx/sites-enabled/odoo"
+SSL_DIR="/etc/letsencrypt/live"
+DOMAIN="your_domain_or_IP"  # Make sure this matches your installation domain
 
 # Function to remove PostgreSQL database and user
 remove_postgres() {
@@ -58,6 +62,32 @@ remove_service_file() {
     sudo rm -f $SERVICE_FILE
 }
 
+# Function to remove Nginx configurations
+remove_nginx_config() {
+    echo "Removing Nginx configurations..."
+    sudo rm -f $NGINX_AVAILABLE
+    sudo rm -f $NGINX_ENABLED
+    sudo systemctl restart nginx || true
+}
+
+# Function to remove SSL certificates
+remove_ssl_certs() {
+    echo "Removing SSL certificates..."
+    sudo certbot delete --cert-name $DOMAIN || true
+    sudo rm -rf "$SSL_DIR/$DOMAIN" || true
+}
+
+# Function to remove Nginx completely (optional)
+remove_nginx_completely() {
+    echo "Do you want to remove Nginx completely? (yes/no)"
+    read remove_nginx
+    if [ "$remove_nginx" == "yes" ]; then
+        sudo apt-get remove --purge nginx nginx-common -y
+        sudo apt-get autoremove -y
+        sudo rm -rf /etc/nginx
+    fi
+}
+
 # Execute functions to clean up any previous installations
 remove_postgres
 remove_system_user
@@ -66,5 +96,8 @@ remove_venv_dir
 remove_log_files
 remove_config_file
 remove_service_file
+remove_nginx_config
+remove_ssl_certs
+remove_nginx_completely
 
 echo "Cleanup completed successfully!"

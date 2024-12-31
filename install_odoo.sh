@@ -16,7 +16,7 @@ LOG_FILE="/var/log/odoo/odoo18.log"
 #  Configure Nginx
 DOMAIN="your_domain_or_IP"
 EMAIL="your_email@example.com"
-ODOO_PORT=8069
+ODOO_PORT="8069"
 
 # Update and upgrade the system
 sudo apt-get update
@@ -93,55 +93,79 @@ read
 sudo cp $INSTALL_DIR/debian/odoo.conf /etc/odoo18.conf
 cat <<EOF | sudo tee /etc/odoo18.conf
 [options]
+# Basic Configuration
 admin_passwd = $ADMIN_PASSWORD
-master_passwd = $ADMIN_PASSWORD
-db_host = db
+db_host = localhost
 db_port = 5432
 db_user = $POSTGRES_USER
 db_password = $DB_PASSWORD
 db_name = $POSTGRES_DB
 addons_path = $INSTALL_DIR/addons,$INSTALL_DIR/moxogo18
 data_dir = $INSTALL_DIR/data
+
+# HTTP Service Configuration
 http_port = $ODOO_PORT
-longpolling_port = 8072
+http_enable = True
 proxy_mode = True
-workers = 4
+longpolling_port = 8072
+xmlrpc = True
+xmlrpc_interface =
+xmlrpc_port = 8069
+
+# Workers Configuration
+workers = 4  # Formula: 2 x NUM_CPU + 1
 max_cron_threads = 2
-limit_time_cpu = 1200
-limit_time_real = 2400
+limit_time_cpu = 600
+limit_time_real = 1200
+limit_time_real_cron = 1800
+
+# Memory Management
+limit_memory_hard = 2684354560  # 2.5GB
+limit_memory_soft = 2147483648  # 2GB
+limit_request = 8192
+limit_memory_request = 536870912  # 512MB
+
+# Database Settings
+db_maxconn = 64  # (workers + max_cron_threads) * 2
+db_sslmode = disable
+db_template = template0
+db_encoding = UTF8
+unaccent = True
+
+# Performance Tuning
+osv_memory_age_limit = 1.0
+osv_memory_count_limit = False
+db_prefetch = True
+auto_reload = False
+without_demo = True
+
+# Logging Configuration
 log_level = info
 log_handler = [':INFO']
 logfile = $LOG_FILE
 logrotate = True
-db_sslmode = disable
-db_maxconn = 128
-db_encoding = UTF8
-dbfilter = .*
-limit_memory_hard = 2684354560
-limit_memory_soft = 2147483648
-limit_request = 8192
-list_db = True
-secure_cert_file = False
-server_wide_modules = base,web
-websocket = True
-transient_age_limit = 1.0
-osv_memory_count_limit = False
-db_template = template0
-unaccent = True
-url_prefix = /mxg
-
-# Performance settings
-http_enable = True
-http_interface =
-gevent_port = 8072
-xmlrpc = True
-xmlrpc_interface =
-db_prefetch = True
-osv_memory_age_limit = 1.0
-load_language = en_US
-without_demo = True
 log_db = False
 log_db_level = warning
+
+# Security Settings
+server_wide_modules = base,web
+list_db = False
+dbfilter = ^${POSTGRES_DB}$
+secure_cert_file = False
+websocket = True
+
+# Email Settings
+email_from = False
+smtp_server = localhost
+smtp_port = 25
+smtp_ssl = False
+smtp_user = False
+smtp_password = False
+
+# Misc Settings
+transient_age_limit = 1.0
+cache_timeout = 100000
+csv_internal_sep = ,
 EOF
 
 # Set permissions for the configuration file
@@ -186,10 +210,51 @@ install_nginx() {
     # Install Nginx
     sudo apt install nginx -y
 
-    # Install Certbot for SSL
-    sudo apt install certbot python3-certbot-nginx -y
+    # Remove existing symlink if it exists
+    sudo rm -f /etc/nginx/sites-enabled/odoo
+    sudo rm -f /etc/nginx/sites-available/odoo
 
-    # Create Nginx configuration for Odoo
+    # Create initial Nginx configuration for HTTP only
+    sudo tee /etc/nginx/sites-available/odoo <<EOF
+server {
+    listen 80;
+    server_name $DOMAIN;
+
+    # Proxy settings
+    location / {
+        proxy_pass http://127.0.0.1:$ODOO_PORT;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    # Static files
+    location /web/static/ {
+        alias $INSTALL_DIR/.local/share/Odoo/filestore/;
+        expires 30d;
+        access_log off;
+    }
+
+    # Common proxy headers
+    proxy_read_timeout 720s;
+    proxy_connect_timeout 720s;
+    proxy_send_timeout 720s;
+    proxy_buffers 16 64k;
+    proxy_buffer_size 128k;
+}
+EOF
+
+    # Enable the Nginx configuration
+    sudo ln -s /etc/nginx/sites-available/odoo /etc/nginx/sites-enabled/
+
+    # Test Nginx configuration and restart Nginx
+    sudo nginx -t && sudo systemctl restart nginx
+
+    # Obtain SSL certificate
+    sudo certbot --nginx -d $DOMAIN --email $EMAIL --agree-tos --no-eff-email
+
+    # Update Nginx configuration for HTTPS
     sudo tee /etc/nginx/sites-available/odoo <<EOF
 server {
     listen 80;
@@ -207,7 +272,16 @@ server {
     # Static files
     location /web/static/ {
         alias $INSTALL_DIR/.local/share/Odoo/filestore/;
+        expires 30d;
+        access_log off;
     }
+
+    # Common proxy headers
+    proxy_read_timeout 720s;
+    proxy_connect_timeout 720s;
+    proxy_send_timeout 720s;
+    proxy_buffers 16 64k;
+    proxy_buffer_size 128k;
 }
 
 # HTTPS server
@@ -229,18 +303,21 @@ server {
     # Static files
     location /web/static/ {
         alias $INSTALL_DIR/.local/share/Odoo/filestore/;
+        expires 30d;
+        access_log off;
     }
+
+    # Common proxy headers
+    proxy_read_timeout 720s;
+    proxy_connect_timeout 720s;
+    proxy_send_timeout 720s;
+    proxy_buffers 16 64k;
+    proxy_buffer_size 128k;
 }
 EOF
 
-    # Enable the Nginx configuration
-    sudo ln -s /etc/nginx/sites-available/odoo /etc/nginx/sites-enabled/
-
     # Test Nginx configuration and restart Nginx
     sudo nginx -t && sudo systemctl restart nginx
-
-    # Obtain SSL certificate
-    sudo certbot --nginx -d $DOMAIN --email $EMAIL --agree-tos --no-eff-email
 
     echo "Nginx has been configured as a reverse proxy for Odoo v18 with SSL."
 }
