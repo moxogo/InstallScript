@@ -55,8 +55,8 @@ sudo -u $SYSTEM_USER -H git clone https://www.github.com/odoo/odoo --depth 1 --b
 # echo 'deb [signed-by=/usr/share/keyrings/odoo-archive-keyring.gpg] https://nightly.odoo.com/18.0/nightly/deb/ ./' | sudo tee /etc/apt/sources.list.d/odoo.list
 # sudo apt-get update && sudo apt-get install -y odoo
 
-echo "Installed Requirements. Press Enter to Continue!"
-read
+# echo "Installed Requirements. Press Enter to Continue!"
+# read
 
 # Install Python3 virtual environment
 sudo apt install -y python3-venv
@@ -69,12 +69,42 @@ read
 # Activate the virtual environment and install Odoo dependencies
 source $VENV_DIR/bin/activate
 
-# Install Python dependencies
-sudo -H pip3 install -r $INSTALL_DIR/requirements.txt
+# Fix permissions for pip
+sudo chown -R $SYSTEM_USER:$SYSTEM_USER $VENV_DIR
 
-# Install additional Python packages
-#pip install pyopenssl geoip2 jinja2 babel psycopg2 polib lxml pypdf2 reportlab passlib pytz werkzeug Pillow reportlab PyPDF2 polib psycopg2-binary decorator python-dateutil lxml lxml[html_clean] beautifulsoup4 zeep psutil rjsmin docutils qrcode num2words vobject django-bootstrap4 lxml[html_clean] beautifulsoup4 libsass psycopg2-binary pdfminer python-crontab html2text pmdarima scipy numpy formio-data dropbox pysftp botocore boto3 paramiko pydrive2 openpyxl sortedcontainers redis>=4.5.4 prometheus-client>=0.17.1 psutil>=5.9.5 py-healthcheck>=1.10.1
-pip install pyopenssl geoip2 jinja2 babel psycopg2 polib lxml pypdf2 reportlab passlib pytz werkzeug Pillow reportlab PyPDF2 polib psycopg2-binary decorator python-dateutil lxml lxml[html_clean] beautifulsoup4 zeep psutil rjsmin docutils qrcode num2words vobject django-bootstrap4 lxml[html_clean] beautifulsoup4 libsass psycopg2-binary pdfminer python-crontab html2text pmdarima scipy numpy formio-data dropbox pysftp botocore boto3 paramiko pydrive2 openpyxl sortedcontainers redis prometheus-client psutil py-healthcheck xlsxwriter python-stdnum
+# Install Python dependencies as odoo user
+sudo -H -u $SYSTEM_USER $VENV_DIR/bin/pip3 install -r $INSTALL_DIR/requirements.txt
+
+# Install additional Python packages with specific versions
+sudo -H -u $SYSTEM_USER $VENV_DIR/bin/pip3 install \
+    babel>=2.6.0 \
+    decorator>=4.3.0 \
+    docutils>=0.14 \
+    gevent>=1.1.2 \
+    greenlet>=0.4.13 \
+    html2text>=2018.1.9 \
+    Jinja2>=2.10.1 \
+    libsass>=0.17.0 \
+    lxml>=4.3.2 \
+    MarkupSafe>=1.1.0 \
+    num2words>=0.5.6 \
+    ofxparse>=0.19 \
+    passlib>=1.7.1 \
+    Pillow>=5.4.1 \
+    polib>=1.1.0 \
+    psutil>=5.6.6 \
+    psycopg2>=2.7.7 \
+    pydot>=1.4.1 \
+    python-dateutil>=2.7.3 \
+    pytz>=2019.1 \
+    pyusb>=1.0.2 \
+    qrcode>=6.1 \
+    reportlab>=3.5.13 \
+    requests>=2.21.0 \
+    zeep>=3.2.0 \
+    python-stdnum>=1.8 \
+    vobject>=0.9.6.1 \
+    werkzeug>=0.14
 
 # Install Wkhtmltopdf and its dependencies
 sudo wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb
@@ -83,7 +113,7 @@ sudo apt-get install -y xfonts-75dpi
 sudo apt install -f
 
 # Fix broken packages
-sudo apt-get install -f
+sudo apt-get install -fl
 deactivate
 
 echo "Deactivate Virtual Environment.Press Enter to Continue!"
@@ -207,18 +237,67 @@ sudo systemctl start odoo18
 
 # Function to install Nginx and configure as reverse proxy
 install_nginx() {
-    # Install Nginx
-    sudo apt install nginx -y
+    # Install Nginx and Certbot with proper plugins
+    sudo apt install nginx python3-certbot python3-certbot-nginx -y
+    
+    # Ensure Nginx is running
+    sudo systemctl start nginx
+    sudo systemctl enable nginx
 
     # Remove existing symlink if it exists
     sudo rm -f /etc/nginx/sites-enabled/odoo
     sudo rm -f /etc/nginx/sites-available/odoo
 
-    # Create initial Nginx configuration for HTTP only
+    # Create initial HTTP-only configuration
     sudo tee /etc/nginx/sites-available/odoo <<EOF
 server {
     listen 80;
     server_name $DOMAIN;
+
+    # Add .well-known location for SSL certificate validation
+    location /.well-known {
+        root /var/www/html;
+    }
+
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+EOF
+
+    # Enable the site
+    sudo ln -s /etc/nginx/sites-available/odoo /etc/nginx/sites-enabled/
+    sudo nginx -t && sudo systemctl restart nginx
+
+    # Request SSL certificate
+    sudo certbot --nginx --agree-tos --email $EMAIL -d $DOMAIN --non-interactive
+
+    # Create the final HTTPS configuration
+    sudo tee /etc/nginx/sites-available/odoo <<EOF
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    server_name $DOMAIN;
+    return 301 https://\$host\$request_uri;
+}
+
+# HTTPS Server
+server {
+    listen 443 ssl;
+    server_name $DOMAIN;
+
+    # SSL Configuration
+    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_session_tickets off;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+
+    # HSTS
+    add_header Strict-Transport-Security "max-age=63072000" always;
 
     # Proxy settings
     location / {
@@ -227,6 +306,8 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Port \$server_port;
     }
 
     # Static files
@@ -236,90 +317,27 @@ server {
         access_log off;
     }
 
-    # Common proxy headers
+    # Increase timeouts for long polling
     proxy_read_timeout 720s;
     proxy_connect_timeout 720s;
     proxy_send_timeout 720s;
     proxy_buffers 16 64k;
     proxy_buffer_size 128k;
+
+    # General settings
+    client_max_body_size 100M;
+    keepalive_timeout 300;
 }
 EOF
 
-    # Enable the Nginx configuration
-    sudo ln -s /etc/nginx/sites-available/odoo /etc/nginx/sites-enabled/
-
-    # Test Nginx configuration and restart Nginx
+    # Test and reload Nginx
     sudo nginx -t && sudo systemctl restart nginx
 
-    # Obtain SSL certificate
-    sudo certbot --nginx -d $DOMAIN --email $EMAIL --agree-tos --no-eff-email
+    # Setup auto-renewal for SSL certificate
+    sudo systemctl enable certbot.timer
+    sudo systemctl start certbot.timer
 
-    # Update Nginx configuration for HTTPS
-    sudo tee /etc/nginx/sites-available/odoo <<EOF
-server {
-    listen 80;
-    server_name $DOMAIN;
-
-    # Redirect HTTP to HTTPS
-    location / {
-        proxy_pass http://127.0.0.1:$ODOO_PORT;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-
-    # Static files
-    location /web/static/ {
-        alias $INSTALL_DIR/.local/share/Odoo/filestore/;
-        expires 30d;
-        access_log off;
-    }
-
-    # Common proxy headers
-    proxy_read_timeout 720s;
-    proxy_connect_timeout 720s;
-    proxy_send_timeout 720s;
-    proxy_buffers 16 64k;
-    proxy_buffer_size 128k;
-}
-
-# HTTPS server
-server {
-    listen 443 ssl;
-    server_name $DOMAIN;
-
-    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
-
-    location / {
-        proxy_pass http://127.0.0.1:$ODOO_PORT;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-
-    # Static files
-    location /web/static/ {
-        alias $INSTALL_DIR/.local/share/Odoo/filestore/;
-        expires 30d;
-        access_log off;
-    }
-
-    # Common proxy headers
-    proxy_read_timeout 720s;
-    proxy_connect_timeout 720s;
-    proxy_send_timeout 720s;
-    proxy_buffers 16 64k;
-    proxy_buffer_size 128k;
-}
-EOF
-
-    # Test Nginx configuration and restart Nginx
-    sudo nginx -t && sudo systemctl restart nginx
-
-    echo "Nginx has been configured as a reverse proxy for Odoo v18 with SSL."
+    echo "Nginx has been configured with SSL for $DOMAIN"
 }
 
 # Prompt user for proxy setup
