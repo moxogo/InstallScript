@@ -130,7 +130,7 @@ db_port = 5432
 db_user = $POSTGRES_USER
 db_password = $DB_PASSWORD
 db_name = $POSTGRES_DB
-addons_path = $INSTALL_DIR/addons,$INSTALL_DIR/moxogo18
+addons_path = $INSTALL_DIR/addons
 data_dir = $INSTALL_DIR/data
 
 # HTTP Service Configuration
@@ -202,23 +202,40 @@ EOF
 sudo chown odoo18: /etc/odoo18.conf
 sudo chmod 640 /etc/odoo18.conf
 
-# Create log directory
-sudo mkdir /var/log/odoo
-sudo chown odoo18:root /var/log/odoo
-sudo chmod -R 755 /var/log/odoo
-echo "Creating log file: $LOG_FILE"
-sudo touch "$LOG_FILE"
-sudo chown $USER:$USER "$LOG_FILE"
+# Create log directory and file with proper permissions
+echo "Setting up logging..."
+sudo mkdir -p $LOG_DIR
+sudo touch $LOG_FILE
+sudo chown -R $SYSTEM_USER:$SYSTEM_USER $LOG_DIR
+sudo chmod -R 755 $LOG_DIR
+sudo chown $SYSTEM_USER:$SYSTEM_USER $LOG_FILE
+sudo chmod 644 $LOG_FILE
+
+# Update the logfile configuration in odoo.conf
+sudo sed -i "s|^logfile.*|logfile = $LOG_FILE|" /etc/odoo18.conf
+sudo sed -i "s|^log_level.*|log_level = info|" /etc/odoo18.conf
+sudo sed -i "s|^log_handler.*|log_handler = [':INFO']|" /etc/odoo18.conf
 
 # Create service file for Odoo
 cat <<EOF | sudo tee /etc/systemd/system/odoo18.service
 [Unit]
 Description=Odoo18
 Documentation=https://moxogo.com
+After=network.target postgresql.service
+
 [Service]
 Type=simple
 User=$SYSTEM_USER
+Group=$SYSTEM_USER
 ExecStart=$INSTALL_DIR/venv/bin/python $INSTALL_DIR/odoo-bin -c /etc/odoo18.conf
+StandardOutput=append:$LOG_FILE
+StandardError=append:$LOG_FILE
+KillMode=mixed
+KillSignal=SIGINT
+TimeoutStopSec=120
+Restart=always
+RestartSec=10
+
 [Install]
 WantedBy=default.target
 EOF
