@@ -113,13 +113,13 @@ sudo apt-get install -y xfonts-75dpi
 sudo apt install -f
 
 # Fix broken packages
-sudo apt-get install -fl
+sudo apt-get install -f
 deactivate
 
 echo "Deactivate Virtual Environment.Press Enter to Continue!"
 read
 
-# Create a configuration file
+# Create a configuration filesudo systemctl status odoo18
 sudo cp $INSTALL_DIR/debian/odoo.conf /etc/odoo18.conf
 cat <<EOF | sudo tee /etc/odoo18.conf
 [options]
@@ -143,20 +143,20 @@ xmlrpc_interface =
 xmlrpc_port = 8069
 
 # Workers Configuration
-workers = 4  # Formula: 2 x NUM_CPU + 1
+workers = 0
 max_cron_threads = 2
 limit_time_cpu = 600
 limit_time_real = 1200
 limit_time_real_cron = 1800
 
 # Memory Management
-limit_memory_hard = 2684354560  # 2.5GB
-limit_memory_soft = 2147483648  # 2GB
+limit_memory_hard = 2684354560
+limit_memory_soft = 2147483648
 limit_request = 8192
-limit_memory_request = 536870912  # 512MB
+limit_memory_request = 536870912
 
 # Database Settings
-db_maxconn = 64  # (workers + max_cron_threads) * 2
+db_maxconn = 64
 db_sslmode = disable
 db_template = template0
 db_encoding = UTF8
@@ -231,9 +231,52 @@ sudo chown root: /etc/systemd/system/odoo18.service
 sudo systemctl daemon-reload
 sudo systemctl enable odoo18
 
+# Database initialization and Odoo startup
 sudo systemctl stop odoo18
-sudo -u odoo18 /odoo18/odoo-bin -d odoo18 -i base --stop-after-init
+
+# Initialize the database with base modules
+echo "Initializing Odoo database..."
+sudo -H -u $SYSTEM_USER bash -c "
+    source $VENV_DIR/bin/activate
+    $INSTALL_DIR/odoo-bin \
+    -c /etc/odoo18.conf \
+    -d $POSTGRES_DB \
+    -i base \
+    --stop-after-init \
+    --without-demo=all \
+    --load-language=en_US
+"
+
+# Verify database initialization
+sudo -u postgres psql -d $POSTGRES_DB -c "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'ir_module_module');" || {
+    echo "Database initialization failed. Retrying with force update..."
+    sudo -H -u $SYSTEM_USER bash -c "
+        source $VENV_DIR/bin/activate
+        $INSTALL_DIR/odoo-bin \
+        -c /etc/odoo18.conf \
+        -d $POSTGRES_DB \
+        -i base \
+        --stop-after-init \
+        --force \
+        --without-demo=all \
+        --load-language=en_US
+    "
+}
+
+# Start Odoo service
 sudo systemctl start odoo18
+sudo systemctl enable odoo18
+
+# Wait for service to fully start
+echo "Waiting for Odoo service to start..."
+sleep 10
+
+# Verify service status
+sudo systemctl status odoo18
+
+# Check if database tables are created
+echo "Verifying database initialization..."
+sudo -u postgres psql -d $POSTGRES_DB -c "\dt ir_*"
 
 # Function to install Nginx and configure as reverse proxy
 install_nginx() {
